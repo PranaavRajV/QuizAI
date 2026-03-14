@@ -15,7 +15,6 @@ from ai_service.exceptions import AIServiceException, AllModelsFailedError
 
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter, SearchFilter
-from django_ratelimit.decorators import ratelimit
 from django.utils.decorators import method_decorator
 
 class QuizViewSet(viewsets.ModelViewSet):
@@ -41,8 +40,6 @@ class QuizViewSet(viewsets.ModelViewSet):
             return QuizListSerializer
         return QuizSerializer
 
-    @method_decorator(ratelimit(key='user', rate='5/10m', method='POST', block=True))
-    @method_decorator(ratelimit(key='user', rate='10/h', method='POST', block=True))
     def create(self, request, *args, **kwargs):
         # Use serializer for input validation and sanitization
         serializer = self.get_serializer(data=request.data)
