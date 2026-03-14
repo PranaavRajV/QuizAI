@@ -182,7 +182,7 @@ export function SearchDropdown() {
 export function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuthStore();
-  const { data: notifications, markAllAsRead } = useNotifications();
+  const { data: notifications, markAllAsRead, markAsRead } = useNotifications();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -262,13 +262,17 @@ export function NotificationDropdown() {
 
                 if (href) {
                   return (
-                    <Link key={n.id} href={href} onClick={() => setIsOpen(false)} style={{ textDecoration: 'none' }}>
+                    <Link key={n.id} href={href} onClick={() => { setIsOpen(false); if (!n.is_read) markAsRead(n.id); }} style={{ textDecoration: 'none' }}>
                       {content}
                     </Link>
                   );
                 }
 
-                return <div key={n.id}>{content}</div>;
+                return (
+                  <div key={n.id} onClick={() => { if (!n.is_read) markAsRead(n.id); }}>
+                    {content}
+                  </div>
+                );
               })
             )}
           </div>

@@ -317,7 +317,16 @@ export function useNotifications() {
       await api.post('/api/notifications/read-all/');
       refetch();
     } catch (e) {
-      console.error('Failed to mark as read');
+      console.error('Failed to mark all as read');
+    }
+  };
+
+  const markAsRead = async (id: number) => {
+    try {
+      await api.post(`/api/notifications/${id}/read/`);
+      refetch();
+    } catch (e) {
+      console.error('Failed to mark notification as read');
     }
   };
 
@@ -327,7 +336,7 @@ export function useNotifications() {
     return () => clearInterval(interval);
   }, [refetch]);
 
-  return { data, isLoading, error, refetch, markAllAsRead };
+  return { data, isLoading, error, refetch, markAllAsRead, markAsRead };
 }
 
 /**
