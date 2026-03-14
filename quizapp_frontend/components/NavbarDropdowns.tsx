@@ -233,27 +233,43 @@ export function NotificationDropdown() {
                 <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>No notifications yet</p>
               </div>
             ) : (
-              notifications.map((n: any) => (
-                <div
-                  key={n.id}
-                  style={{
-                    padding: '12px 14px',
-                    borderBottom: '1px solid var(--border)',
-                    background: n.is_read ? 'transparent' : 'var(--accent-subtle)',
-                    transition: 'background 120ms ease',
-                    cursor: 'default',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = n.is_read ? 'transparent' : 'var(--accent-subtle)')}
-                >
-                  <p style={{ fontSize: '12.5px', color: 'var(--text-primary)', lineHeight: 1.5 }}>
-                    {n.message}
-                  </p>
-                  <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '4px' }}>
-                    {new Date(n.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              ))
+              notifications.map((n: any) => {
+                const href = n.type === 'friend_request' ? '/dashboard/friends' 
+                            : n.type === 'challenge_received' ? '/dashboard/challenges'
+                            : n.type === 'challenge_completed' ? '/dashboard/challenges'
+                            : undefined;
+                
+                const content = (
+                  <div
+                    style={{
+                      padding: '12px 14px',
+                      borderBottom: '1px solid var(--border)',
+                      background: n.is_read ? 'transparent' : 'var(--accent-subtle)',
+                      transition: 'background 120ms ease',
+                      cursor: href ? 'pointer' : 'default',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = n.is_read ? 'transparent' : 'var(--accent-subtle)')}
+                  >
+                    <p style={{ fontSize: '12.5px', color: 'var(--text-primary)', lineHeight: 1.5 }}>
+                      {n.message}
+                    </p>
+                    <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '4px' }}>
+                      {new Date(n.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                );
+
+                if (href) {
+                  return (
+                    <Link key={n.id} href={href} onClick={() => setIsOpen(false)} style={{ textDecoration: 'none' }}>
+                      {content}
+                    </Link>
+                  );
+                }
+
+                return <div key={n.id}>{content}</div>;
+              })
             )}
           </div>
 
