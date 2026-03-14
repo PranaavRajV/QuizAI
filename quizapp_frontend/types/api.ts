@@ -8,6 +8,8 @@ export interface User {
   dark_mode?: boolean;
   avatar_url?: string | null;
   notifications_unread?: number;
+  pending_friend_requests_count?: number;
+  pending_challenges_count?: number;
 }
 
 

@@ -221,8 +221,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push('/login');
   };
 
-  const friendCount    = Array.isArray(notifications) ? notifications.filter((n: any) => n.type === 'friend_request' && !n.is_read).length : 0;
-  const challengeCount = Array.isArray(notifications) ? notifications.filter((n: any) => n.type === 'challenge_received' && !n.is_read).length : 0;
+  const friendCount    = user?.pending_friend_requests_count || 0;
+  const challengeCount = user?.pending_challenges_count || 0;
 
   const getBadge = (key?: 'friends' | 'challenges') => {
     if (key === 'friends') return friendCount;
