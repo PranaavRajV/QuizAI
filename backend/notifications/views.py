@@ -16,3 +16,14 @@ class NotificationReadAllView(views.APIView):
     def post(self, request, *args, **kwargs):
         request.user.notifications.filter(is_read=False).update(is_read=True)
         return response.Response({'status': 'ok'})
+
+class NotificationReadOneView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        notification = request.user.notifications.filter(pk=pk).first()
+        if notification:
+            notification.is_read = True
+            notification.save()
+            return response.Response({'status': 'ok'})
+        return response.Response({'error': 'Notification not found'}, status=404)
