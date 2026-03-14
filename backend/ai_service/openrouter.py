@@ -11,19 +11,22 @@ from .exceptions import (
 logger = logging.getLogger(__name__)
 
 class OpenRouterService:
-    MODEL_CHAIN = [
-        "google/gemini-flash-1.5-exp:free",
-        "google/gemini-2.0-flash-exp:free",
-        "meta-llama/llama-3.1-8b-instruct:free",
-        "meta-llama/llama-3.3-70b-instruct:free",
-        "mistralai/mistral-7b-instruct:free",
-        "qwen/qwen-2.5-72b-instruct:free",
-        "openrouter/free", # Ultimate fallback
-    ]
-
     def __init__(self):
         self.api_key = os.getenv('OPENROUTER_API_KEY')
+        if not self.api_key:
+            logger.error("OPENROUTER_API_KEY is not set in environment variables.")
         self.url = "https://openrouter.ai/api/v1/chat/completions"
+
+    MODEL_CHAIN = [
+        "google/gemini-2.0-flash-exp:free",
+        "google/gemini-flash-1.5-exp:free",
+        "meta-llama/llama-3.1-8b-instruct:free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "google/gemini-pro-1.5:free",
+        "qwen/qwen-2.5-72b-instruct:free",
+        "mistralai/mistral-7b-instruct:free",
+        "openrouter/free", # Ultimate fallback
+    ]
 
     def validate_ai_response(self, questions):
         if not isinstance(questions, list):
