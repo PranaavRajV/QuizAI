@@ -29,8 +29,8 @@ clone/
 ion*/
 javafx-sdk-*/
 vehicle-telemetry-analytics/
-package-lock.json
-package.json
+/package-lock.json
+/package.json
 parent
 parent.c
 main
