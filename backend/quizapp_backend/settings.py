@@ -79,6 +79,9 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'quizapp_backend.urls'
 
+# Prevent redirects that break CORS
+APPEND_SLASH = False
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -210,27 +213,36 @@ SIMPLE_JWT = {
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
+
 frontend_url = os.getenv('CORS_ORIGIN_FRONTEND')
 if frontend_url:
-    # Strip trailing slash if present
+    # Ensure protocol is present
+    if not frontend_url.startswith('http'):
+        frontend_url = f"https://{frontend_url}"
     CORS_ALLOWED_ORIGINS.append(frontend_url.rstrip('/'))
 
-# Safety check for common Vercel URL patterns if no env is set
-CORS_ALLOW_ALL_ORIGINS = DEBUG # Only allow all in debug/local
+# Allow any Vercel subdomain for preview/production support
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://rajjjquizai-.*\.vercel\.app$",
+]
+
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
-if frontend_url:
-    CSRF_TRUSTED_ORIGINS.append(frontend_url.rstrip('/'))
+for origin in CORS_ALLOWED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append(origin)
 
-# In production, we need the backend URL itself to be trusted for CSRF if it hosts admin
-# but more importantly, the frontend URL MUST be here for cross-origin POST requests.
+# Trust common Railway and Vercel patterns
 if not DEBUG:
-    # Adding common Railway subdomains to CSRF trust just in case
     CSRF_TRUSTED_ORIGINS.append('https://quizai-production.up.railway.app')
+    if frontend_url:
+        CSRF_TRUSTED_ORIGINS.append(frontend_url.rstrip('/'))
 
 CORS_ALLOW_HEADERS = [
     'accept',
