@@ -93,11 +93,27 @@ TEMPLATES = [
 WSGI_APPLICATION = 'quizapp_backend.wsgi.application'
 
 
-if os.getenv('DATABASE_URL'):
+# Database configuration
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+if DATABASE_URL:
+    # Production: Use Railway's DATABASE_URL
     DATABASES = {
-        'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=True
+        )
     }
+    # Special fix for some Railway Postgres setups
+    if 'sslmode' not in DATABASES['default'].get('OPTIONS', {}):
+        DATABASES['default'].setdefault('OPTIONS', {})['sslmode'] = 'require'
 else:
+    # Development: Local fallback
+    if not DEBUG:
+        print("CRITICAL WARNING: No DATABASE_URL found in production environment!")
+        
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
