@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { font-family: Helvetica, Arial, sans-serif; color: #333; }
+  .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+  .btn { display: inline-block; padding: 10px 20px; background-color: #6366f1; color: white; text-decoration: none; border-radius: 5px; }
+  .footer { margin-top: 30px; font-size: 12px; color: #888; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h2>QuizAI</h2>
+    <h3>Hello {{ user.username }},</h3>
+    <p><strong>{{ from_user.username }}</strong> has sent you a friend request.</p>
+    <p><a href="http://localhost:3000/dashboard" class="btn">View Requests</a></p>
+    <div class="footer">
+      <p>Want to stop receiving emails? <a href="http://localhost:3000/dashboard/settings">Unsubscribe here</a>.</p>
+    </div>
+  </div>
+</body>
+</html>

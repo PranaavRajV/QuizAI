@@ -1,0 +1,67 @@
+# Node
+node_modules/
+.next/
+dist/
+build/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+db.sqlite3
+
+# OS
+.DS_Store
+
+# Random files from Teach edison root that shouldn't be in QuizAI
+*.app.zip
+hadoop*/
+postgresql*/
+micromamba/
+my-app/
+registerEase/
+medical-image-compressor/
+dating-app/
+clone/
+ion*/
+javafx-sdk-*/
+vehicle-telemetry-analytics/
+package-lock.json
+package.json
+parent
+parent.c
+main
+main.c
+child_program
+child_program.c
+factorial
+factorial.c
+sumfact
+sumfact.c
+subnet.py
+server.py
+scrapper.py
+trial.py
+demo.py
+huffman_coding.py
+checksum.py
+bd.py
+log.csv
+log.txt
+log_analysis.sh
+prompt.json
+test.js
+sample.c
+"importance-of-sports 2.pdf"
+"untitled folder/"
+"untitled folder 2/"
+query_outputs/
+data/
+calculator/
+be/
+bh.sh
+c1.c.save
+client.py

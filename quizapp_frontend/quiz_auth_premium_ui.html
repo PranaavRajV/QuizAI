@@ -1,0 +1,777 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
+
+:root {
+  --ink: var(--color-text-primary);
+  --ink2: var(--color-text-secondary);
+  --ink3: var(--color-text-tertiary);
+  --bg: var(--color-background-primary);
+  --bg2: var(--color-background-secondary);
+  --bg3: var(--color-background-tertiary);
+  --line: var(--color-border-tertiary);
+  --line2: var(--color-border-secondary);
+  --accent: #0A0A0A;
+  --accent-fg: #ffffff;
+  --blue: #2563EB;
+  --blue-bg: #EFF6FF;
+  --blue-border: #BFDBFE;
+  --green: #059669;
+  --green-bg: #ECFDF5;
+  --red: #DC2626;
+  --red-bg: #FEF2F2;
+  --amber: #D97706;
+  --amber-bg: #FFFBEB;
+  --r: 10px;
+  --rm: 7px;
+  --head: 'Instrument Sans', sans-serif;
+  --body: 'Instrument Sans', sans-serif;
+  --serif: 'Instrument Serif', serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body, .w { font-family: var(--body); color: var(--ink); font-size: 14px; line-height: 1.5; }
+.w { padding: 0.5rem 0 1.5rem; }
+
+/* Tabs */
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); margin-bottom: 28px; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  padding: 10px 18px; font-family: var(--body); font-size: 12.5px; font-weight: 500;
+  color: var(--ink2); background: none; border: none; border-bottom: 2px solid transparent;
+  cursor: pointer; white-space: nowrap; margin-bottom: -1px; letter-spacing: 0.1px;
+  transition: color 0.12s, border-color 0.12s;
+}
+.tab:hover { color: var(--ink); }
+.tab.on { color: var(--ink); border-bottom-color: var(--ink); }
+.panel { display: none; } .panel.on { display: block; }
+
+/* AUTH */
+.auth-wrap {
+  display: grid; grid-template-columns: 1fr 1fr;
+  min-height: 480px; border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+}
+.auth-left {
+  background: #0A0A0A; padding: 48px 40px;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.auth-brand { display: flex; align-items: center; gap: 10px; }
+.brand-sq {
+  width: 28px; height: 28px; background: #ffffff; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+}
+.brand-sq svg { width: 16px; height: 16px; }
+.brand-text { font-family: var(--head); font-size: 15px; font-weight: 600; color: #fff; }
+.auth-headline {
+  font-family: var(--serif); font-style: italic;
+  font-size: 34px; color: #ffffff; line-height: 1.15; letter-spacing: -0.5px;
+}
+.auth-headline span { color: #94a3b8; font-style: normal; font-family: var(--head); font-size: 13px; display: block; margin-top: 12px; font-weight: 400; letter-spacing: 0; }
+.auth-dots { display: flex; gap: 6px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: #334155; }
+.dot.on { background: #fff; }
+
+.auth-right { background: var(--bg); padding: 40px 36px; display: flex; flex-direction: column; justify-content: center; }
+.form-title { font-family: var(--head); font-size: 20px; font-weight: 600; color: var(--ink); margin-bottom: 4px; letter-spacing: -0.3px; }
+.form-sub { font-size: 13px; color: var(--ink2); margin-bottom: 28px; }
+
+.field { margin-bottom: 14px; }
+.flabel { display: block; font-size: 11.5px; font-weight: 500; color: var(--ink2); margin-bottom: 5px; letter-spacing: 0.2px; }
+.finput {
+  width: 100%; height: 40px; padding: 0 12px;
+  background: var(--bg); border: 1px solid var(--line2); border-radius: var(--rm);
+  font-family: var(--body); font-size: 13.5px; color: var(--ink); outline: none;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.finput:focus { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(10,10,10,0.07); }
+.finput.err { border-color: var(--red); }
+.finput.ok { border-color: var(--green); }
+.ferr { font-size: 11.5px; color: var(--red); margin-top: 4px; }
+.fhint { font-size: 11.5px; color: var(--ink3); margin-top: 4px; }
+
+.irel { position: relative; }
+.irel .finput { padding-right: 38px; }
+.itoggle {
+  position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; padding: 0;
+  color: var(--ink3); font-size: 12px; font-family: var(--body); font-weight: 500;
+}
+
+.check-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.clabel { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink2); cursor: pointer; }
+.clabel input { accent-color: var(--ink); width: 14px; height: 14px; }
+.flink { font-size: 12.5px; color: var(--blue); font-weight: 500; text-decoration: none; }
+
+.btn-dark {
+  width: 100%; height: 42px; background: var(--accent); color: var(--accent-fg);
+  border: none; border-radius: var(--rm); font-family: var(--body); font-size: 13.5px;
+  font-weight: 500; cursor: pointer; letter-spacing: 0.1px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn-dark:hover { opacity: 0.85; }
+.btn-dark:active { transform: scale(0.99); }
+.btn-dark.load { opacity: 0.7; cursor: not-allowed; }
+
+.divdr { display: flex; align-items: center; gap: 10px; margin: 16px 0; color: var(--ink3); font-size: 11.5px; }
+.divdr::before, .divdr::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+.btn-outline {
+  width: 100%; height: 40px; background: var(--bg); border: 1px solid var(--line2); border-radius: var(--rm);
+  font-family: var(--body); font-size: 13px; font-weight: 500; color: var(--ink); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background 0.12s, border-color 0.12s;
+}
+.btn-outline:hover { background: var(--bg2); border-color: var(--line2); }
+
+.afooter { font-size: 12.5px; color: var(--ink2); text-align: center; margin-top: 18px; }
+.afooter a { color: var(--ink); font-weight: 600; text-decoration: none; }
+
+.str-bar { display: flex; gap: 3px; margin-top: 7px; }
+.str-seg { flex: 1; height: 2.5px; border-radius: 99px; background: var(--line); transition: background 0.2s; }
+.str-seg.w { background: var(--red); }
+.str-seg.f { background: var(--amber); }
+.str-seg.g { background: var(--green); }
+
+.spin {
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.25); border-top-color: #fff;
+  animation: spin 0.65s linear infinite; display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.api-err {
+  margin-top: 10px; padding: 10px 12px;
+  background: var(--red-bg); border: 1px solid #FECACA; border-radius: var(--rm);
+  font-size: 12.5px; color: var(--red); display: none;
+}
+
+/* DASHBOARD */
+.dash {
+  display: flex; height: 540px; border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+}
+
+.sidebar {
+  width: 228px; flex-shrink: 0; background: var(--bg);
+  border-right: 1px solid var(--line); display: flex; flex-direction: column;
+}
+.sb-top { padding: 20px 16px 16px; border-bottom: 1px solid var(--line); }
+.sb-brand { display: flex; align-items: center; gap: 9px; margin-bottom: 0; }
+.sb-sq { width: 26px; height: 26px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+.sb-sq svg { width: 14px; height: 14px; }
+.sb-name { font-family: var(--head); font-size: 14px; font-weight: 600; color: var(--ink); }
+
+.sb-body { flex: 1; padding: 12px 10px; overflow-y: auto; }
+.sb-section { margin-bottom: 4px; }
+.sb-sec-label { font-size: 10px; font-weight: 600; color: var(--ink3); letter-spacing: 0.8px; text-transform: uppercase; padding: 6px 8px 4px; }
+
+.nav {
+  display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: var(--rm);
+  font-size: 13px; font-weight: 400; color: var(--ink2); cursor: pointer;
+  transition: background 0.1s, color 0.1s; border: none; background: none; width: 100%; text-align: left;
+  margin-bottom: 1px;
+}
+.nav svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.6; }
+.nav:hover { background: var(--bg2); color: var(--ink); }
+.nav.on { background: var(--accent); color: #fff; font-weight: 500; }
+.nav.on svg { opacity: 1; }
+.nav .badge { margin-left: auto; background: #334155; color: #e2e8f0; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 99px; }
+.nav.on .badge { background: rgba(255,255,255,0.15); color: #fff; }
+
+.sb-foot { border-top: 1px solid var(--line); padding: 12px; }
+.user-row {
+  display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: var(--rm);
+  cursor: pointer; transition: background 0.1s;
+}
+.user-row:hover { background: var(--bg2); }
+.av {
+  width: 30px; height: 30px; border-radius: 50%; background: var(--accent);
+  display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #fff; flex-shrink: 0;
+}
+.uname { font-size: 12.5px; font-weight: 500; color: var(--ink); line-height: 1.2; }
+.uemail { font-size: 11px; color: var(--ink3); line-height: 1.2; }
+.sb-chevron { margin-left: auto; color: var(--ink3); width: 14px; height: 14px; flex-shrink: 0; }
+
+/* Main */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg3); }
+.topbar {
+  height: 52px; background: var(--bg); border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; padding: 0 22px; gap: 10px; flex-shrink: 0;
+}
+.page-h { font-family: var(--head); font-size: 14px; font-weight: 600; color: var(--ink); letter-spacing: -0.2px; }
+.tb-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.ib {
+  width: 30px; height: 30px; border: 1px solid var(--line); border-radius: var(--rm);
+  background: var(--bg); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--ink2); transition: background 0.1s, border-color 0.1s;
+}
+.ib:hover { background: var(--bg2); border-color: var(--line2); }
+.ib svg { width: 15px; height: 15px; }
+.sep { width: 1px; height: 20px; background: var(--line); }
+
+.content { flex: 1; overflow-y: auto; padding: 22px; scrollbar-width: thin; }
+
+.kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+.kpi {
+  background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px;
+}
+.kpi-lbl { font-size: 10.5px; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.kpi-val { font-family: var(--head); font-size: 28px; font-weight: 600; color: var(--ink); letter-spacing: -1px; line-height: 1; }
+.kpi-sub { font-size: 11.5px; color: var(--green); margin-top: 6px; }
+
+.sec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.sec-title { font-size: 13px; font-weight: 600; color: var(--ink); letter-spacing: -0.1px; }
+.sec-link { font-size: 12px; color: var(--blue); font-weight: 500; border: none; background: none; cursor: pointer; }
+
+.qlist { display: flex; flex-direction: column; gap: 6px; }
+.qi {
+  display: flex; align-items: center; gap: 12px; padding: 11px 14px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: var(--r);
+  transition: border-color 0.1s; cursor: pointer;
+}
+.qi:hover { border-color: var(--line2); }
+.qi-icon {
+  width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--bg2); display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.qi-icon svg { width: 16px; height: 16px; color: var(--ink2); }
+.qi-meta { flex: 1; min-width: 0; }
+.qi-name { font-size: 13px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qi-info { font-size: 11.5px; color: var(--ink3); margin-top: 2px; }
+.badge {
+  font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 99px; flex-shrink: 0; letter-spacing: 0.2px;
+}
+.be { background: var(--green-bg); color: #065F46; }
+.bm { background: var(--amber-bg); color: #92400E; }
+.bh { background: var(--red-bg); color: #991B1B; }
+.score { font-size: 13px; font-weight: 600; color: var(--ink); flex-shrink: 0; letter-spacing: -0.3px; }
+
+.cta-bar {
+  margin-top: 14px; padding: 14px 16px; background: var(--bg); border: 1px solid var(--line);
+  border-radius: var(--r); display: flex; align-items: center; gap: 14px;
+}
+.cta-copy .ct { font-size: 13px; font-weight: 600; color: var(--ink); }
+.cta-copy .cs { font-size: 12px; color: var(--ink2); margin-top: 2px; }
+.btn-sm {
+  height: 32px; padding: 0 14px; background: var(--accent); color: #fff;
+  border: none; border-radius: var(--rm); font-size: 12px; font-weight: 500; cursor: pointer;
+  white-space: nowrap; margin-left: auto; transition: opacity 0.15s;
+}
+.btn-sm:hover { opacity: 0.8; }
+
+/* COMPONENTS */
+.cgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.cc { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; }
+.clabel { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--ink3); margin-bottom: 14px; }
+
+.btn-row { display: flex; flex-direction: column; gap: 7px; }
+.bv {
+  width: 100%; height: 38px; border-radius: var(--rm); font-family: var(--body); font-size: 13px; font-weight: 500;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.12s; border: none;
+}
+.bv.primary { background: var(--accent); color: #fff; }
+.bv.primary:hover { opacity: 0.85; }
+.bv.secondary { background: var(--bg2); color: var(--ink); border: 1px solid var(--line2); }
+.bv.secondary:hover { border-color: var(--ink3); }
+.bv.outline { background: none; color: var(--ink); border: 1px solid var(--line2); }
+.bv.outline:hover { background: var(--bg2); }
+.bv.danger { background: var(--red-bg); color: var(--red); border: 1px solid #FECACA; }
+.bv.dis { opacity: 0.38; cursor: not-allowed; }
+
+.inp-demo { display: flex; flex-direction: column; gap: 10px; }
+.il { font-size: 11px; font-weight: 500; color: var(--ink2); margin-bottom: 4px; letter-spacing: 0.2px; }
+.ii {
+  width: 100%; height: 38px; padding: 0 11px; background: var(--bg);
+  border: 1px solid var(--line2); border-radius: var(--rm);
+  font-family: var(--body); font-size: 13px; color: var(--ink); outline: none;
+}
+.ii.foc { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(10,10,10,0.06); }
+.ii.er { border-color: var(--red); }
+.ie { font-size: 11px; color: var(--red); margin-top: 4px; }
+.ih { font-size: 11px; color: var(--ink3); margin-top: 4px; }
+
+.sp-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.sp { border-radius: 50%; border-style: solid; border-top-color: var(--ink); animation: spin 0.65s linear infinite; }
+.sp.s { width: 14px; height: 14px; border-width: 1.5px; border-color: var(--line2); border-top-color: var(--ink); }
+.sp.m { width: 20px; height: 20px; border-width: 2px; border-color: var(--line2); border-top-color: var(--ink); }
+.sp.l { width: 26px; height: 26px; border-width: 2.5px; border-color: var(--line2); border-top-color: var(--ink); }
+.sp.inv { border-color: rgba(255,255,255,0.2); border-top-color: #fff; }
+
+.tgl-list { display: flex; flex-direction: column; gap: 10px; }
+.tgl-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--ink); }
+.tgl-desc { font-size: 11.5px; color: var(--ink3); margin-top: 1px; }
+.tgl {
+  width: 34px; height: 18px; background: var(--line2); border-radius: 99px; position: relative;
+  cursor: pointer; transition: background 0.2s; flex-shrink: 0;
+}
+.tgl.on { background: var(--accent); }
+.tgl::after {
+  content: ''; position: absolute; width: 12px; height: 12px; background: #fff; border-radius: 50%;
+  top: 3px; left: 3px; transition: transform 0.2s;
+}
+.tgl.on::after { transform: translateX(16px); }
+
+/* HOOKS */
+.hgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.hlist { display: flex; flex-direction: column; gap: 5px; }
+.hi {
+  padding: 10px 12px; background: var(--bg2); border: 1px solid var(--line); border-radius: var(--rm);
+}
+.hname { font-size: 12px; font-weight: 600; color: var(--ink); font-family: monospace; margin-bottom: 3px; }
+.hdesc { font-size: 11.5px; color: var(--ink2); line-height: 1.5; }
+.hret { font-size: 11px; color: var(--ink3); margin-top: 4px; font-family: monospace; }
+
+.code-block {
+  background: #0f172a; border-radius: var(--rm); overflow: hidden;
+  font-family: monospace; font-size: 11.5px; line-height: 1.7;
+}
+.cb-head {
+  padding: 7px 14px; background: #1e293b; border-bottom: 1px solid #334155;
+  font-size: 11px; font-weight: 500; color: #94a3b8; font-family: var(--body);
+}
+.cb-body { padding: 12px 14px; overflow-x: auto; color: #cbd5e1; }
+.ct { color: #7C3AED; }
+.cv { color: #38bdf8; }
+.cn { color: #34d399; }
+.cs { color: #fb7185; }
+
+.flow { display: flex; flex-direction: column; gap: 5px; }
+.fstep {
+  display: flex; align-items: flex-start; gap: 10px; padding: 9px 12px;
+  border-radius: var(--rm); border: 1px solid; font-size: 12px;
+}
+.fstep.info { background: var(--blue-bg); border-color: var(--blue-border); color: #1e40af; }
+.fstep.warn { background: var(--amber-bg); border-color: #FDE68A; color: #92400E; }
+.fstep.ok { background: var(--green-bg); border-color: #A7F3D0; color: #065F46; }
+.fstep.bad { background: var(--red-bg); border-color: #FECACA; color: #991B1B; }
+.fn { font-weight: 700; flex-shrink: 0; width: 18px; }
+.ftext { line-height: 1.5; }
+code { background: rgba(0,0,0,0.07); padding: 1px 5px; border-radius: 4px; font-family: monospace; font-size: 10.5px; }
+</style>
+
+<div class="w">
+<div class="tabs" id="tabs">
+  <button class="tab on" onclick="sw('login')">Login</button>
+  <button class="tab" onclick="sw('register')">Register</button>
+  <button class="tab" onclick="sw('dashboard')">Dashboard</button>
+  <button class="tab" onclick="sw('components')">Components</button>
+  <button class="tab" onclick="sw('hooks')">Hooks + Store</button>
+</div>
+
+<!-- LOGIN -->
+<div class="panel on" id="p-login">
+  <div class="auth-wrap">
+    <div class="auth-left">
+      <div class="auth-brand">
+        <div class="brand-sq">
+          <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" fill="#0A0A0A"/><rect x="9" y="2" width="5" height="5" rx="1" fill="#0A0A0A"/><rect x="2" y="9" width="5" height="5" rx="1" fill="#0A0A0A"/><circle cx="11.5" cy="11.5" r="2.5" fill="#0A0A0A"/></svg>
+        </div>
+        <span class="brand-text">QuizAI</span>
+      </div>
+      <div>
+        <div class="auth-headline">Generate. Learn.<br>Master anything.
+          <span>AI-powered quizzes tailored to your knowledge level and goals.</span>
+        </div>
+      </div>
+      <div class="auth-dots">
+        <div class="dot on"></div><div class="dot on"></div><div class="dot"></div>
+      </div>
+    </div>
+    <div class="auth-right">
+      <div class="form-title">Welcome back</div>
+      <p class="form-sub">Sign in to your account</p>
+      <div class="field">
+        <label class="flabel">Email address</label>
+        <input class="finput ok" type="email" value="alex@example.com" id="l-email">
+      </div>
+      <div class="field">
+        <label class="flabel">Password</label>
+        <div class="irel">
+          <input class="finput" type="password" value="securepass" id="l-pass" placeholder="Min. 8 characters">
+          <button class="itoggle" onclick="tp('l-pass',this)">Show</button>
+        </div>
+      </div>
+      <div class="check-row">
+        <label class="clabel"><input type="checkbox" checked> Keep me signed in</label>
+        <a class="flink" href="#">Reset password</a>
+      </div>
+      <button class="btn-dark" id="l-btn" onclick="doLogin()">
+        <span id="l-txt">Continue</span>
+      </button>
+      <div class="api-err" id="l-err">Incorrect email or password. Please try again.</div>
+      <div class="divdr">or</div>
+      <button class="btn-outline">
+        <svg width="15" height="15" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+      <div class="afooter">No account yet? <a href="#" onclick="sw('register');return false;">Create one</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- REGISTER -->
+<div class="panel" id="p-register">
+  <div class="auth-wrap">
+    <div class="auth-left">
+      <div class="auth-brand">
+        <div class="brand-sq">
+          <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" fill="#0A0A0A"/><rect x="9" y="2" width="5" height="5" rx="1" fill="#0A0A0A"/><rect x="2" y="9" width="5" height="5" rx="1" fill="#0A0A0A"/><circle cx="11.5" cy="11.5" r="2.5" fill="#0A0A0A"/></svg>
+        </div>
+        <span class="brand-text">QuizAI</span>
+      </div>
+      <div>
+        <div class="auth-headline">Start learning<br>differently.
+          <span>Join thousands mastering new skills with AI-generated quiz content.</span>
+        </div>
+      </div>
+      <div class="auth-dots">
+        <div class="dot"></div><div class="dot on"></div><div class="dot on"></div>
+      </div>
+    </div>
+    <div class="auth-right">
+      <div class="form-title">Create account</div>
+      <p class="form-sub">Free to start, no credit card required</p>
+      <div class="field">
+        <label class="flabel">Email address</label>
+        <input class="finput" type="email" placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label class="flabel">Password</label>
+        <div class="irel">
+          <input class="finput" type="password" id="r-pass" placeholder="Min. 8 characters" oninput="doStr(this.value)">
+          <button class="itoggle" onclick="tp('r-pass',this)">Show</button>
+        </div>
+        <div class="str-bar" id="sb"><div class="str-seg" id="ss1"></div><div class="str-seg" id="ss2"></div><div class="str-seg" id="ss3"></div><div class="str-seg" id="ss4"></div></div>
+        <p class="fhint" id="stxt">Enter password to check strength</p>
+      </div>
+      <div class="field">
+        <label class="flabel">Confirm password</label>
+        <div class="irel">
+          <input class="finput" type="password" id="r-conf" placeholder="Repeat password">
+          <button class="itoggle" onclick="tp('r-conf',this)">Show</button>
+        </div>
+        <p class="ferr" id="r-err" style="display:none">Passwords do not match</p>
+      </div>
+      <button class="btn-dark" style="margin-top:6px;" onclick="doReg()">
+        <span id="r-txt">Create account</span>
+      </button>
+      <div class="afooter">Already have an account? <a href="#" onclick="sw('login');return false;">Sign in</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="panel" id="p-dashboard">
+  <div class="dash">
+    <div class="sidebar">
+      <div class="sb-top">
+        <div class="sb-brand">
+          <div class="sb-sq">
+            <svg viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="4" height="4" rx="1" fill="#fff"/><rect x="7" y="1" width="4" height="4" rx="1" fill="#fff"/><rect x="1" y="7" width="4" height="4" rx="1" fill="#fff"/><circle cx="9" cy="9" r="2" fill="#fff"/></svg>
+          </div>
+          <span class="sb-name">QuizAI</span>
+        </div>
+      </div>
+      <div class="sb-body">
+        <div class="sb-section">
+          <div class="sb-sec-label">Menu</div>
+          <button class="nav on" onclick="sn(this)">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>
+            Dashboard
+          </button>
+          <button class="nav" onclick="sn(this)">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
+            My Quizzes
+            <span class="badge">12</span>
+          </button>
+          <button class="nav" onclick="sn(this)">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+            History
+          </button>
+          <button class="nav" onclick="sn(this)">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"/><path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"/></svg>
+            Analytics
+          </button>
+        </div>
+        <div class="sb-section" style="margin-top:8px;">
+          <div class="sb-sec-label">Account</div>
+          <button class="nav" onclick="sn(this)">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+            Settings
+          </button>
+        </div>
+      </div>
+      <div class="sb-foot">
+        <div class="user-row">
+          <div class="av">AK</div>
+          <div>
+            <div class="uname">Alex Kumar</div>
+            <div class="uemail">alex@example.com</div>
+          </div>
+          <svg class="sb-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="topbar">
+        <span class="page-h">Dashboard</span>
+        <div class="tb-right">
+          <div class="ib">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
+          </div>
+          <div class="ib">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+          </div>
+          <div class="sep"></div>
+          <div class="av" style="width:28px;height:28px;font-size:10px;cursor:pointer;">AK</div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="kpi-lbl">Total quizzes</div>
+            <div class="kpi-val">24</div>
+            <div class="kpi-sub">+ 3 this week</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-lbl">Average score</div>
+            <div class="kpi-val">78%</div>
+            <div class="kpi-sub">+ 5% vs last week</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-lbl">This week</div>
+            <div class="kpi-val">7</div>
+            <div class="kpi-sub">+ 2 above average</div>
+          </div>
+        </div>
+        <div class="sec-head">
+          <span class="sec-title">Recent quizzes</span>
+          <button class="sec-link">View all</button>
+        </div>
+        <div class="qlist">
+          <div class="qi">
+            <div class="qi-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg></div>
+            <div class="qi-meta">
+              <div class="qi-name">React Hooks Deep Dive</div>
+              <div class="qi-info">10 questions · 3 days ago</div>
+            </div>
+            <span class="badge bh">Hard</span>
+            <span class="score">92%</span>
+          </div>
+          <div class="qi">
+            <div class="qi-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804.123-.489H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clip-rule="evenodd"/></svg></div>
+            <div class="qi-meta">
+              <div class="qi-name">Python Data Structures</div>
+              <div class="qi-info">8 questions · 5 days ago</div>
+            </div>
+            <span class="badge bm">Medium</span>
+            <span class="score">75%</span>
+          </div>
+          <div class="qi">
+            <div class="qi-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg></div>
+            <div class="qi-meta">
+              <div class="qi-name">AWS Cloud Fundamentals</div>
+              <div class="qi-info">12 questions · 1 week ago</div>
+            </div>
+            <span class="badge be">Easy</span>
+            <span class="score">88%</span>
+          </div>
+        </div>
+        <div class="cta-bar">
+          <div class="qi-icon"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg></div>
+          <div class="cta-copy">
+            <div class="ct">Generate a new quiz</div>
+            <div class="cs">AI creates questions in seconds from any topic</div>
+          </div>
+          <button class="btn-sm">Create quiz</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COMPONENTS -->
+<div class="panel" id="p-components">
+  <div class="cgrid">
+    <div class="cc">
+      <div class="clabel">Button variants</div>
+      <div class="btn-row">
+        <button class="bv primary">Primary</button>
+        <button class="bv secondary">Secondary</button>
+        <button class="bv outline">Outline</button>
+        <button class="bv danger">Danger</button>
+        <button class="bv primary load dis">
+          <span class="sp s inv"></span> Loading
+        </button>
+        <button class="bv secondary dis" disabled>Disabled</button>
+      </div>
+    </div>
+    <div class="cc">
+      <div class="clabel">Input states</div>
+      <div class="inp-demo">
+        <div>
+          <div class="il">Default</div>
+          <input class="ii" placeholder="Enter value">
+        </div>
+        <div>
+          <div class="il">Focused</div>
+          <input class="ii foc" value="user@example.com">
+        </div>
+        <div>
+          <div class="il">Error state</div>
+          <input class="ii er" value="not-an-email">
+          <div class="ie">Please enter a valid email address</div>
+        </div>
+        <div>
+          <div class="il">With helper text</div>
+          <input class="ii" placeholder="Min. 8 characters">
+          <div class="ih">Use letters, numbers and symbols</div>
+        </div>
+      </div>
+    </div>
+    <div class="cc">
+      <div class="clabel">Spinners</div>
+      <div class="sp-row">
+        <div class="sp s"></div>
+        <div class="sp m"></div>
+        <div class="sp l"></div>
+        <span style="font-size:11px;color:var(--ink3);">sm / md / lg</span>
+      </div>
+      <div style="height:1px;background:var(--line);margin-bottom:14px;"></div>
+      <div class="clabel">Toggle controls</div>
+      <div class="tgl-list">
+        <div>
+          <div class="tgl-row">
+            <div>
+              <div>Dark mode</div>
+            </div>
+            <div class="tgl on" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+        <div>
+          <div class="tgl-row">
+            <div>Email notifications</div>
+            <div class="tgl" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+        <div>
+          <div class="tgl-row">
+            <div>Auto-save progress</div>
+            <div class="tgl on" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cc">
+      <div class="clabel">Card variants</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;">
+          <div style="padding:10px 14px;border-bottom:1px solid var(--line);font-size:12px;font-weight:600;color:var(--ink);">Quiz Result</div>
+          <div style="padding:10px 14px;font-size:12px;color:var(--ink2);line-height:1.6;">You scored 8 of 10 questions correctly. Above average for this difficulty.</div>
+          <div style="padding:8px 14px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:6px;">
+            <button style="height:26px;padding:0 10px;border-radius:5px;font-size:11px;border:1px solid var(--line2);background:var(--bg);color:var(--ink2);cursor:pointer;">Retake</button>
+            <button style="height:26px;padding:0 10px;border-radius:5px;font-size:11px;border:none;background:var(--accent);color:#fff;cursor:pointer;">Review</button>
+          </div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--ink2);">Card without header — plain content wrapper.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOOKS + STORE -->
+<div class="panel" id="p-hooks">
+  <div class="hgrid">
+    <div>
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--ink3);margin-bottom:10px;">Custom React hooks</div>
+      <div class="hlist">
+        <div class="hi"><div class="hname">useAuth()</div><div class="hdesc">Wraps Zustand store. Exposes login, logout, register, current user and loading state.</div><div class="hret">{ user, login, logout, register, isLoading }</div></div>
+        <div class="hi"><div class="hname">useQuizzes()</div><div class="hdesc">Fetches paginated quiz list for current user with loading and error state.</div><div class="hret">{ data, isLoading, error, refetch }</div></div>
+        <div class="hi"><div class="hname">useCreateQuiz()</div><div class="hdesc">Mutation hook. Calls AI generation endpoint, manages all async states.</div><div class="hret">{ createQuiz, isLoading, error, success }</div></div>
+        <div class="hi"><div class="hname">useQuiz(id)</div><div class="hdesc">Fetches single quiz with all questions. Does not expose correct answers.</div><div class="hret">{ data, isLoading, error }</div></div>
+        <div class="hi"><div class="hname">useAttempt(id)</div><div class="hdesc">Fetches attempt state, submitted answers, and full results after completion.</div><div class="hret">{ data, isLoading, error }</div></div>
+        <div class="hi"><div class="hname">useHistory()</div><div class="hdesc">Paginated quiz history with filter and sort controls.</div><div class="hret">{ data, page, setPage, isLoading }</div></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--ink3);margin-bottom:10px;">Zustand auth store</div>
+        <div class="code-block">
+          <div class="cb-head">store/authStore.ts</div>
+          <div class="cb-body">
+            <span class="ct">interface</span> <span class="cv">AuthState</span> {<br>
+            &nbsp;&nbsp;user<span class="cs">:</span> <span class="cn">User | null</span><br>
+            &nbsp;&nbsp;accessToken<span class="cs">:</span> <span class="cn">string | null</span><br>
+            &nbsp;&nbsp;isLoading<span class="cs">:</span> <span class="cn">boolean</span><br>
+            &nbsp;&nbsp;login<span class="cs">:</span> <span class="cn">(email, pass) =&gt; Promise</span><br>
+            &nbsp;&nbsp;register<span class="cs">:</span> <span class="cn">(e, p, confirm) =&gt; Promise</span><br>
+            &nbsp;&nbsp;logout<span class="cs">:</span> <span class="cn">() =&gt; void</span><br>
+            &nbsp;&nbsp;refreshToken<span class="cs">:</span> <span class="cn">() =&gt; Promise</span><br>
+            &nbsp;&nbsp;loadFromStorage<span class="cs">:</span> <span class="cn">() =&gt; void</span><br>
+            }
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--ink3);margin-bottom:10px;">Axios interceptor flow</div>
+        <div class="flow">
+          <div class="fstep info"><span class="fn">1</span><div class="ftext">Every request attaches <code>Authorization: Bearer {token}</code> header automatically</div></div>
+          <div class="fstep warn"><span class="fn">2</span><div class="ftext">On <code>401</code> response — silently attempt token refresh using stored refresh token</div></div>
+          <div class="fstep ok"><span class="fn">3</span><div class="ftext">Refresh succeeds — update token in store, retry the original request once</div></div>
+          <div class="fstep bad"><span class="fn">4</span><div class="ftext">Refresh fails — call <code>logout()</code> and redirect to <code>/login</code></div></div>
+        </div>
+      </div>
+      <div style="padding:12px 14px;background:var(--bg2);border:1px solid var(--line);border-radius:var(--rm);">
+        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--ink3);margin-bottom:8px;">middleware.ts — route guards</div>
+        <div style="display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--ink);">
+          <div style="display:flex;gap:8px;"><span style="color:var(--red);font-weight:600;">Protected</span><code>/dashboard/*</code> — redirect to /login if no token</div>
+          <div style="display:flex;gap:8px;"><span style="color:var(--amber);font-weight:600;">Redirected</span><code>/login</code> and <code>/register</code> — push to /dashboard if logged in</div>
+          <div style="display:flex;gap:8px;"><span style="color:var(--green);font-weight:600;">Strategy</span> Read token from cookies for SSR-safe middleware checks</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+function sw(name){
+  const map=['login','register','dashboard','components','hooks'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('on',map[i]===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('p-'+name).classList.add('on');
+}
+function sn(el){
+  document.querySelectorAll('.nav').forEach(n=>n.classList.remove('on'));
+  el.classList.add('on');
+}
+function tp(id,btn){
+  const i=document.getElementById(id);
+  i.type=i.type==='password'?'text':'password';
+  btn.textContent=i.type==='password'?'Show':'Hide';
+}
+function doLogin(){
+  const btn=document.getElementById('l-btn'),txt=document.getElementById('l-txt'),err=document.getElementById('l-err');
+  btn.classList.add('load');txt.innerHTML='<span class="spin"></span>';err.style.display='none';
+  setTimeout(()=>{btn.classList.remove('load');txt.textContent='Continue';err.style.display='block';},1800);
+}
+function doReg(){
+  const txt=document.getElementById('r-txt'),err=document.getElementById('r-err');
+  const p=document.getElementById('r-pass').value,c=document.getElementById('r-conf').value;
+  if(p&&c&&p!==c){err.style.display='block';return;}
+  err.style.display='none';
+  txt.innerHTML='<span class="spin"></span>';
+  setTimeout(()=>txt.textContent='Create account',1800);
+}
+function doStr(v){
+  let s=0;
+  if(v.length>=8)s++;if(/[A-Z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++;
+  const segs=['ss1','ss2','ss3','ss4'];
+  const cls=['w','f','g','g'];
+  const lbl=['','Weak','Fair','Good','Strong'];
+  segs.forEach((id,i)=>{const e=document.getElementById(id);e.className='str-seg';if(i<s)e.classList.add(cls[s-1]||'w');});
+  document.getElementById('stxt').textContent=v.length>0?(lbl[s]||'Weak')+' password':'Enter password to check strength';
+}
+</script>
