@@ -218,6 +218,31 @@ if frontend_url:
 
 # Safety check for common Vercel URL patterns if no env is set
 CORS_ALLOW_ALL_ORIGINS = DEBUG # Only allow all in debug/local
+CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+]
+if frontend_url:
+    CSRF_TRUSTED_ORIGINS.append(frontend_url.rstrip('/'))
+
+# In production, we need the backend URL itself to be trusted for CSRF if it hosts admin
+# but more importantly, the frontend URL MUST be here for cross-origin POST requests.
+if not DEBUG:
+    # Adding common Railway subdomains to CSRF trust just in case
+    CSRF_TRUSTED_ORIGINS.append('https://quizai-production.up.railway.app')
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
