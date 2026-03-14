@@ -32,7 +32,12 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'quizai-production.up.railway.app',
+] + os.getenv('ALLOWED_HOSTS', '').split(',')
+ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if h]
 
 
 # Application definition
@@ -205,9 +210,13 @@ SIMPLE_JWT = {
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    # Add your production Vercel URL here:
-    # "https://your-app.vercel.app",
-] + [o for o in [os.getenv('CORS_ORIGIN_FRONTEND', '')] if o]
+]
+frontend_url = os.getenv('CORS_ORIGIN_FRONTEND')
+if frontend_url:
+    CORS_ALLOWED_ORIGINS.append(frontend_url)
+
+# Safety check for common Vercel URL patterns if no env is set
+CORS_ALLOW_ALL_ORIGINS = DEBUG # Only allow all in debug/local
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
