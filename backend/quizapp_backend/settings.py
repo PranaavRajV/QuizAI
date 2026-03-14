@@ -228,12 +228,15 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://rajjjquizai-.*\.vercel\.app$",
 ]
 
+CORS_ALLOW_ALL_ORIGINS = True # Temporary for troubleshooting
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = DEBUG
 
+# Django CSRF requires explicit origins, but supports wildcards in host
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://*.vercel.app",
+    "https://*.railway.app",
 ]
 for origin in CORS_ALLOWED_ORIGINS:
     CSRF_TRUSTED_ORIGINS.append(origin)
