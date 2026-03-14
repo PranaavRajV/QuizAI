@@ -10,8 +10,10 @@ from .serializers import (
     FriendshipSerializer, ChallengeSerializer, ScoreShareSerializer, SocialUserSerializer
 )
 from users.models import User
-from quizzes.models import Quiz, QuizAttempt
+from quizzes.models import Quiz, QuizAttempt, Question, Choice
 from notifications.emails import send_friend_request, send_challenge_received, send_weekly_summary
+from ai_service.openrouter import OpenRouterService
+from ai_service.exceptions import AIServiceException, AllModelsFailedError
 
 class FriendViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -216,29 +218,53 @@ class ChallengeViewSet(viewsets.ModelViewSet):
     def create(self, request):
         challenged_user_id = request.data.get('challenged_user_id')
         topic = request.data.get('topic')
-        difficulty = request.data.get('difficulty')
+        difficulty = request.data.get('difficulty', 'medium')
         num_questions = request.data.get('num_questions', 5)
 
         challenged_user = get_object_or_404(User, id=challenged_user_id)
         
-        # Create a Quiz for this challenge
-        # Note: In a real app, we'd trigger AI generation here. 
-        # For now, let's assume we create a placeholder quiz.
-        quiz = Quiz.objects.create(
-            topic=topic,
-            difficulty=difficulty,
-            num_questions=num_questions,
-            created_by=request.user
-        )
-        
-        challenge = Challenge.objects.create(
-            challenger=request.user,
-            challenged=challenged_user,
-            quiz=quiz,
-            status='pending'
-        )
-        send_challenge_received(challenged_user, request.user, topic)
-        return Response(ChallengeSerializer(challenge).data, status=status.HTTP_201_CREATED)
+        # 1. Generate AI questions for the challenge quiz
+        ai_service = OpenRouterService()
+        try:
+            questions_data = ai_service.generate_questions(topic, difficulty, num_questions, user_id=request.user.id)
+            
+            # 2. Create the Quiz object
+            quiz = Quiz.objects.create(
+                topic=topic,
+                difficulty=difficulty,
+                num_questions=len(questions_data),
+                created_by=request.user
+            )
+            
+            # 3. Save questions and choices
+            for q_data in questions_data:
+                question = Question.objects.create(
+                    quiz=quiz,
+                    question_text=q_data['question_text'],
+                    explanation=q_data['explanation']
+                )
+                for idx, choice_text in enumerate(q_data['choices']):
+                    Choice.objects.create(
+                        question=question,
+                        choice_text=choice_text,
+                        is_correct=(idx == q_data['correct_index'])
+                    )
+            
+            # 4. Create the Challenge
+            challenge = Challenge.objects.create(
+                challenger=request.user,
+                challenged=challenged_user,
+                quiz=quiz,
+                status='pending'
+            )
+            send_challenge_received(challenged_user, request.user, topic)
+            return Response(ChallengeSerializer(challenge).data, status=status.HTTP_201_CREATED)
+            
+        except (AIServiceException, AllModelsFailedError) as e:
+            return Response(
+                {"error": "Social Arena: AI generators are busy. Please try again in 30 seconds.", "code": "ai_busy"},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
 
     @decorators.action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
