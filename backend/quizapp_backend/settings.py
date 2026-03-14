@@ -213,7 +213,8 @@ CORS_ALLOWED_ORIGINS = [
 ]
 frontend_url = os.getenv('CORS_ORIGIN_FRONTEND')
 if frontend_url:
-    CORS_ALLOWED_ORIGINS.append(frontend_url)
+    # Strip trailing slash if present
+    CORS_ALLOWED_ORIGINS.append(frontend_url.rstrip('/'))
 
 # Safety check for common Vercel URL patterns if no env is set
 CORS_ALLOW_ALL_ORIGINS = DEBUG # Only allow all in debug/local
