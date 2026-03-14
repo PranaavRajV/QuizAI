@@ -29,7 +29,17 @@ export default function DashboardPage() {
 
   const displayName = user?.username || user?.email?.split('@')[0] || 'Explorer';
   const recentQuizzes = quizzes?.results?.slice(0, 5) || [];
-  const activities = notifications?.recent_activity?.slice(0, 5) || [];
+  
+  // Fix: notifications is already the array of activities (results || data) from the hook
+  const activities = (Array.isArray(notifications) ? notifications : []).slice(0, 5);
+
+  // Fix: Ensure performance_by_difficulty is safely accessed
+  const performanceValues = analytics?.performance_by_difficulty 
+    ? (Object.values(analytics.performance_by_difficulty) as number[]) 
+    : [];
+  const avgPerformance = performanceValues.length > 0 
+    ? Math.round(performanceValues.reduce((a, b) => a + b, 0) / performanceValues.length) 
+    : 0;
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '32px', paddingBottom: '40px' }}>
@@ -60,7 +70,7 @@ export default function DashboardPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
         <StatCard 
           label="Avg Score" 
-          value={`${analytics?.performance_by_difficulty ? Math.round((Object.values(analytics.performance_by_difficulty) as number[]).reduce((a:number,b:number)=>a+b,0) / 3) : 0}%`}
+          value={`${avgPerformance}%`}
           sub="Last 30 days"
           icon={<Award size={18} />}
           accent="var(--accent)"
