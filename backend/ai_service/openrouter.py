@@ -12,12 +12,12 @@ logger = logging.getLogger(__name__)
 
 class OpenRouterService:
     MODEL_CHAIN = [
-        "meta-llama/llama-3.3-70b-instruct:free",
+        "google/gemini-flash-1.5-exp:free",
         "google/gemini-2.0-flash-exp:free",
-        "google/gemma-3-27b-it:free",
-        "mistralai/mistral-small-24b-instruct-2501:free",
+        "meta-llama/llama-3.1-8b-instruct:free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "mistralai/mistral-7b-instruct:free",
         "qwen/qwen-2.5-72b-instruct:free",
-        "deepseek/deepseek-chat:free",
         "openrouter/free", # Ultimate fallback
     ]
 
@@ -73,7 +73,7 @@ class OpenRouterService:
                 self.url,
                 headers=headers,
                 data=json.dumps(payload),
-                timeout=15  # 15s timeout as requested
+                timeout=30  # Increased to 30s to handle slow free models
             )
             
             if response.status_code == 429:
