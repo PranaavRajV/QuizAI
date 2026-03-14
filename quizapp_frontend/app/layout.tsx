@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { OfflineBanner } from '@/components/OfflineBanner';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import "./globals.css";
 
 
@@ -59,7 +60,9 @@ export default function RootLayout({
               }}
             />
             <OfflineBanner />
-            {children}
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
           </ThemeProvider>
         </GoogleOAuthProvider>
       </body>

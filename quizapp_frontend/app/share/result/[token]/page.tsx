@@ -16,7 +16,8 @@ export default function PublicSharePage() {
   useEffect(() => {
     const fetchShare = async () => {
       try {
-        const resp = await axios.get(`http://localhost:8000/api/social/share/public-share/${token}/`);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const resp = await axios.get(`${apiUrl}/api/social/share/public-share/${token}/`);
         setData(resp.data);
       } catch (e) {
         console.error(e);
