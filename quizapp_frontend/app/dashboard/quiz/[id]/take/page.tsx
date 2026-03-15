@@ -103,7 +103,7 @@ export default function TakeQuizPage() {
     }, 150);
   };
 
-  // ── Finish Quiz: single-shot submit of ALL answers ─────────────────────
+  // ── Finish Quiz: submit all answers then complete ─────────────────────
   const handleFinish = async () => {
     if (!quiz) return;
 
@@ -116,27 +116,34 @@ export default function TakeQuizPage() {
     const currentQuestion = quiz.questions![currentIdx];
     const isTyped = currentQuestion?.type === 'typed';
 
-    // Merge the current (last) question's answer
+    // Merge the current (last) question's answer into state
     const finalAnswers = {
       ...answers,
       [currentQuestion.id]: isTyped ? { typedAnswer } : { choiceId: selectedChoiceId },
     };
 
-    // Build the payload expected by /submit/
-    const formatted = Object.entries(finalAnswers).map(([qId, ans]) => {
-      const q = quiz.questions!.find(q => q.id === Number(qId));
-      return {
-        question: Number(qId),
-        choice: q?.type === 'mcq' ? ((ans as any).choiceId ?? null) : null,
-        typed_answer: q?.type === 'typed' ? ((ans as any).typedAnswer ?? null) : null,
-      };
-    });
-
     setIsSubmitting(true);
     try {
-      await api.post(`/api/quizzes/attempts/${resolvedAttemptId}/submit/`, {
-        answers: formatted,
-      });
+      // Submit every collected answer
+      for (const [qId, ans] of Object.entries(finalAnswers)) {
+        const q = quiz.questions!.find(q => q.id === Number(qId));
+        if (!q) continue;
+        try {
+          await api.post(`/api/quizzes/attempts/${resolvedAttemptId}/answer/`, {
+            question_id: Number(qId),
+            choice_id: q.type === 'mcq' ? (ans as any).choiceId ?? null : null,
+            typed_answer: q.type === 'typed' ? (ans as any).typedAnswer ?? null : null,
+          });
+        } catch (ansErr: any) {
+          if (ansErr?.response?.status !== 400) throw ansErr;
+        }
+      }
+      // Mark complete
+      try {
+        await api.post(`/api/quizzes/attempts/${resolvedAttemptId}/complete/`);
+      } catch (completeErr: any) {
+        if (completeErr?.response?.status !== 400) throw completeErr;
+      }
       localStorage.removeItem(ATTEMPT_KEY);
       router.push(`/dashboard/quiz/${id}/results/${resolvedAttemptId}`);
     } catch (e: any) {

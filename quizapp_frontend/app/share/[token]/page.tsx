@@ -66,7 +66,7 @@ export default function SharedQuizPage() {
     setSelectedChoiceId(saved?.choiceId ?? null);
   };
 
-  // Finish Quiz — submit all answers in one shot
+  // Finish Quiz — submit all answers then complete
   const handleFinish = async () => {
     if (!selectedChoiceId || !attemptId || !quiz) return;
 
@@ -76,17 +76,19 @@ export default function SharedQuizPage() {
       [question.id]: { choiceId: selectedChoiceId },
     };
 
-    const formatted = Object.entries(finalAnswers).map(([qId, ans]) => ({
-      question: Number(qId),
-      choice: (ans as any).choiceId ?? null,
-      typed_answer: null,
-    }));
-
     setIsSubmitting(true);
     try {
-      const resp = await api.post(`/api/quizzes/attempts/${attemptId}/submit/`, {
-        answers: formatted,
-      });
+      for (const [qId, ans] of Object.entries(finalAnswers)) {
+        try {
+          await api.post(`/api/quizzes/attempts/${attemptId}/answer/`, {
+            question_id: Number(qId),
+            choice_id: (ans as any).choiceId ?? null,
+          });
+        } catch (ansErr: any) {
+          if (ansErr?.response?.status !== 400) throw ansErr;
+        }
+      }
+      const resp = await api.post(`/api/quizzes/attempts/${attemptId}/complete/`);
       setResults(resp.data);
       setIsCompleted(true);
     } catch (e) {
