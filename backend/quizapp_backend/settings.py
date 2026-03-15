@@ -219,6 +219,8 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://purplequizai.vercel.app",
+    "https://rajjjquizai.vercel.app",
 ]
 
 frontend_url = os.getenv('CORS_ORIGIN_FRONTEND')
@@ -242,6 +244,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
     "https://*.vercel.app",
     "https://*.railway.app",
+    "https://purplequizai.vercel.app",
 ]
 for origin in CORS_ALLOWED_ORIGINS:
     CSRF_TRUSTED_ORIGINS.append(origin)
