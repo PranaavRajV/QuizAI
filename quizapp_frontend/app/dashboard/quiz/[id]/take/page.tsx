@@ -27,20 +27,15 @@ export default function TakeQuizPage() {
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // ── Storage key scoped to this quiz ──────────────────────────────────────
+  // ── Storage key scoped to this quiz (submit-time backup only) ────────────
   const ATTEMPT_KEY = `quiz_attempt_${id}`;
 
-  // Initialize attempt
+  // Initialize attempt — ALWAYS call /start/ so we get the canonical,
+  // live attempt ID from the backend. The backend is idempotent: if an
+  // incomplete attempt already exists it returns that one. This prevents
+  // stale localStorage values causing 404s on answer submission.
   useEffect(() => {
     const startAttempt = async () => {
-      // Recover from localStorage first (survives page refresh)
-      const savedId = localStorage.getItem(ATTEMPT_KEY);
-      if (savedId) {
-        setAttemptId(Number(savedId));
-        setIsAttemptStarting(false);
-        return;
-      }
-
       try {
         const resp = await api.post(`/api/quizzes/${id}/start/`);
         const newAttemptId = resp.data.attempt_id;
@@ -49,7 +44,7 @@ export default function TakeQuizPage() {
           setIsAttemptStarting(false);
           return;
         }
-        // Persist immediately so any re-render / refresh keeps it
+        // Mirror to localStorage as a submit-time backup only
         localStorage.setItem(ATTEMPT_KEY, String(newAttemptId));
         setAttemptId(newAttemptId);
       } catch (e: any) {
@@ -58,7 +53,7 @@ export default function TakeQuizPage() {
           // Already completed — redirect straight to results
           localStorage.removeItem(ATTEMPT_KEY);
           router.replace(`/dashboard/quiz/${id}/results/${existingAttemptId}`);
-          return; // don't flip isAttemptStarting — we're navigating away
+          return; // navigating away, don't flip isAttemptStarting
         } else {
           console.error('Failed to start attempt', e?.response?.data);
           toast.error('Could not start quiz — please refresh and try again.');

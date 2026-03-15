@@ -7,12 +7,12 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Avg, Count
 from datetime import timedelta
 from .models import Quiz, Question, Choice, QuizAttempt, UserAnswer, Room, RoomParticipant
-from .tasks import evaluate_typed_answers
 from .serializers import (
     QuizSerializer, QuizListSerializer, QuizAttemptSerializer, 
     QuizAttemptResultSerializer, UserAnswerSerializer,
     RoomSerializer, RoomParticipantSerializer
 )
+from .tasks import evaluate_typed_answers, notify_challenge_completed
 from ai_service.openrouter import OpenRouterService
 from ai_service.exceptions import AIServiceException, AllModelsFailedError
 
@@ -165,6 +165,19 @@ class QuizViewSet(viewsets.ModelViewSet):
     def start(self, request, pk=None):
         quiz = self.get_object()
         user = request.user if request.user.is_authenticated else None
+
+        # Idempotent: return the existing incomplete attempt if one exists.
+        # This prevents stale localStorage IDs causing 404s — the frontend
+        # can safely call /start/ on every page load and always get the right ID.
+        if user:
+            existing = QuizAttempt.objects.filter(
+                quiz=quiz,
+                user=user,
+                is_completed=False,
+            ).order_by('-started_at').first()
+            if existing:
+                return Response({"attempt_id": existing.id}, status=status.HTTP_200_OK)
+
         attempt = QuizAttempt.objects.create(
             user=user,
             quiz=quiz,
@@ -285,22 +298,25 @@ class AttemptViewSet(viewsets.GenericViewSet):
                     winner = challenge.winner
 
                     try:
-                        # Notify challenger
-                        send_challenge_completed(
-                            user=challenge.challenger,
-                            opponent=challenge.challenged,
-                            your_score=challenge.challenger_attempt.score,
-                            their_score=challenge.challenged_attempt.score,
-                            won=(winner == challenge.challenger)
+                        # Notify challenger asynchronously
+                        notify_challenge_completed.delay(
+                            challenge.challenger.id,
+                            challenge.challenged.id,
+                            challenge.challenger_attempt.score,
+                            challenge.challenged_attempt.score,
+                            (winner == challenge.challenger)
                         )
-                        # Notify challenged
-                        send_challenge_completed(
-                            user=challenge.challenged,
-                            opponent=challenge.challenger,
-                            your_score=challenge.challenged_attempt.score,
-                            their_score=challenge.challenger_attempt.score,
-                            won=(winner == challenge.challenged)
+                        # Notify challenged asynchronously
+                        notify_challenge_completed.delay(
+                            challenge.challenged.id,
+                            challenge.challenger.id,
+                            challenge.challenged_attempt.score,
+                            challenge.challenger_attempt.score,
+                            (winner == challenge.challenged)
                         )
+                    except Exception as task_err:
+                        import logging
+                        logging.getLogger(__name__).warning(f"Failed to delay notification task: {task_err}")
                     except Exception as email_err:
                         import logging
                         logging.getLogger(__name__).warning(
