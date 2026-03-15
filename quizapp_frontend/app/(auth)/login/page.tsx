@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import Link from 'next/link';
 import { useGoogleLogin } from '@react-oauth/google';
-import { toast } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 
 const loginSchema = z.object({

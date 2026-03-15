@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import Link from 'next/link';
 import { useGoogleLogin } from '@react-oauth/google';
-import { toast } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 const schema = z.object({
   email: z.string().email('Please enter a valid email address'),
