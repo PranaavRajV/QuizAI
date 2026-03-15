@@ -1,1 +1,1 @@
-web: python manage.py migrate && gunicorn quizapp_backend.wsgi --log-file -
+web: python manage.py migrate && gunicorn quizapp_backend.wsgi --timeout 120 --workers 2 --log-file -

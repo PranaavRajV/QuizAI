@@ -36,6 +36,8 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     'quizai-production.up.railway.app',
+    'purplequizai.vercel.app',
+    'rajjjquizai.vercel.app',
 ] + os.getenv('ALLOWED_HOSTS', '').split(',')
 ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if h]
 
@@ -223,7 +225,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://rajjjquizai.vercel.app",
 ]
 
-frontend_url = os.getenv('CORS_ORIGIN_FRONTEND')
+frontend_url = os.getenv('CORS_ORIGIN_FRONTEND') or os.getenv('FRONTEND_URL', 'https://purplequizai.vercel.app')
 if frontend_url:
     # Ensure protocol is present
     if not frontend_url.startswith('http'):

@@ -68,7 +68,7 @@ class OpenRouterService:
                 self.url,
                 headers=headers,
                 data=json.dumps(payload),
-                timeout=30,
+                timeout=60,
             )
             
             if response.status_code == 429:
@@ -132,7 +132,7 @@ class OpenRouterService:
         }
         
         try:
-            response = requests.post(self.xai_url, headers=headers, json=payload, timeout=30)
+            response = requests.post(self.xai_url, headers=headers, json=payload, timeout=60)
             if response.status_code != 200:
                 raise AIServiceException(f"xAI API Error ({response.status_code})")
                 
@@ -179,9 +179,9 @@ class OpenRouterService:
                 )
 
         base_requirements = """
-REQUIREMENTS:
-1. Return ONLY a valid JSON array of objects. NO markdown, NO commentary.
-2. Each MCQ must have 4 choices and a correct_index (0-3).
+Return ONLY a valid JSON array of objects.
+[{"question_text": "text", "choices": ["a", "b", "c", "d"], "correct_index": 0, "explanation": "text", "type": "mcq"}]
+NO markdown, NO commentary.
 """
 
         system_prompt = f"""You are a professional educational assessment expert.
