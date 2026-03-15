@@ -44,7 +44,12 @@ function ChallengesContent() {
 
   const handleAccept = async (id: number) => {
     const data = await acceptChallenge(id);
-    if (data?.quiz_id) router.push(`/dashboard/quiz/${data.quiz_id}/take`);
+    if (data?.quiz_id) {
+      if (data.attempt_id) {
+        localStorage.setItem('current_attempt_' + data.quiz_id, data.attempt_id.toString());
+      }
+      router.push(`/dashboard/quiz/${data.quiz_id}/take`);
+    }
   };
 
   const filtered = challenges.filter(c => {

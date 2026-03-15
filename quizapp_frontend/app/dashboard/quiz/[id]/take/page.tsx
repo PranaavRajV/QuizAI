@@ -35,6 +35,14 @@ export default function TakeQuizPage() {
   // stale localStorage values causing 404s on answer submission.
   useEffect(() => {
     const startAttempt = async () => {
+      // Check if attempt already exists (e.g. from challenge accept flow)
+      const existingChallengeAttempt = localStorage.getItem('current_attempt_' + id);
+      if (existingChallengeAttempt) {
+        setAttemptId(Number(existingChallengeAttempt));
+        setIsAttemptStarting(false);
+        return;
+      }
+
       try {
         const resp = await api.post(`/api/quizzes/${id}/start/`);
         const newAttemptId = resp.data.attempt_id;

@@ -50,9 +50,12 @@ class QuizViewSet(viewsets.ModelViewSet):
             
         from django.db.models import Q
         return Quiz.objects.filter(
-            Q(created_by=user) | Q(is_public=True),
+            Q(created_by=user) | 
+            Q(is_public=True) |
+            Q(challenges__challenger=user) |
+            Q(challenges__challenged=user),
             is_active=True
-        ).select_related('created_by').prefetch_related(
+        ).distinct().select_related('created_by').prefetch_related(
             'questions', 'questions__choices'
         )
 

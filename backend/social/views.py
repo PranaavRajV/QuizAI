@@ -271,9 +271,24 @@ class ChallengeViewSet(viewsets.ModelViewSet):
     @decorators.action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
         challenge = get_object_or_404(Challenge, id=pk, challenged=request.user, status='pending')
+        
+        # Create an attempt for the challenged user immediately upon accept
+        attempt = QuizAttempt.objects.create(
+            quiz=challenge.quiz,
+            user=request.user,
+            total_questions=challenge.quiz.questions.count(),
+            started_at=timezone.now()
+        )
+        
+        challenge.challenged_attempt = attempt
         challenge.status = 'active'
         challenge.save()
-        return Response({"status": "challenge accepted", "quiz_id": challenge.quiz.id})
+        
+        return Response({
+            "status": "challenge accepted", 
+            "quiz_id": challenge.quiz.id,
+            "attempt_id": attempt.id
+        })
 
 class ShareViewSet(viewsets.ViewSet):
     def get_permissions(self):
