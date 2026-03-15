@@ -84,7 +84,7 @@ export default function TakeQuizPage() {
 
     const hasAnswer = isTyped ? typedAnswer.trim().length > 0 : !!selectedChoiceId;
 
-    // Resolve attemptId — state first, then localStorage fallback
+    // Resolve attemptId — state first, then localStorage backup
     const resolvedAttemptId = attemptId ?? (Number(localStorage.getItem(ATTEMPT_KEY)) || null);
 
     if (!hasAnswer || !resolvedAttemptId || !quiz || isFinalSubmitted) {
@@ -94,56 +94,60 @@ export default function TakeQuizPage() {
       return;
     }
 
+    const question = quiz.questions![currentIdx];
+
+    // ── Step 1: Save answer to local state only (NO API call here) ────────
+    const updatedAnswers = {
+      ...answers,
+      [question.id]: isTyped ? { typedAnswer } : { choiceId: selectedChoiceId },
+    };
+    setAnswers(updatedAnswers);
+
+    // ── Step 2: Navigate to next question (pure local, instant) ───────────
+    if (currentIdx < quiz.questions!.length - 1) {
+      setDirection('next');
+      setIsTransitioning(true);
+      setTimeout(() => {
+        const nextIdx = currentIdx + 1;
+        const nextQuestion = quiz.questions![nextIdx];
+        const previous = updatedAnswers[nextQuestion.id];
+        setCurrentIdx(nextIdx);
+        setSelectedChoiceId((previous as any)?.choiceId ?? null);
+        setTypedAnswer((previous as any)?.typedAnswer ?? '');
+        setIsTransitioning(false);
+      }, 150);
+      return; // ← do NOT hit backend yet
+    }
+
+    // ── Step 3: Last question — submit ALL answers then complete ──────────
     setIsSubmitting(true);
     try {
-      const question = quiz.questions![currentIdx];
-
-      // Locally store answer for navigation
-      setAnswers(prev => ({
-        ...prev,
-        [question.id]: isTyped ? { typedAnswer } : { choiceId: selectedChoiceId },
-      }));
-
-      // Submit the answer (idempotent per question)
-      try {
-        await api.post(`/api/quizzes/attempts/${resolvedAttemptId}/answer/`, {
-          question_id: question.id,
-          choice_id: isMcq ? selectedChoiceId : null,
-          typed_answer: isTyped ? typedAnswer : null,
-        });
-      } catch (answerErr: any) {
-        // If attempt already completed, redirect to results
-        if (answerErr?.response?.status === 400) {
-          setIsFinalSubmitted(true);
-          localStorage.removeItem(ATTEMPT_KEY);
-          router.push(`/dashboard/quiz/${id}/results/${resolvedAttemptId}`);
-          return;
-        }
-        throw answerErr;
-      }
-
-      if (currentIdx < quiz.questions!.length - 1) {
-        setDirection('next');
-        setIsTransitioning(true);
-        setTimeout(() => {
-          const nextIdx = currentIdx + 1;
-          const nextQuestion = quiz.questions![nextIdx];
-          const previous = (answers as any)[nextQuestion.id];
-          setCurrentIdx(nextIdx);
-          setSelectedChoiceId(previous?.choiceId ?? null);
-          setTypedAnswer(previous?.typedAnswer ?? '');
-          setIsTransitioning(false);
-        }, 150);
-      } else {
+      // Submit every collected answer to the backend
+      for (const [qId, ans] of Object.entries(updatedAnswers)) {
+        const q = quiz.questions!.find(q => q.id === Number(qId));
+        if (!q) continue;
         try {
-          await api.post(`/api/quizzes/attempts/${resolvedAttemptId}/complete/`);
-        } catch (completeErr: any) {
-          if (completeErr?.response?.status !== 400) throw completeErr;
+          await api.post(`/api/quizzes/attempts/${resolvedAttemptId}/answer/`, {
+            question_id: Number(qId),
+            choice_id: q.type === 'mcq' ? (ans as any).choiceId ?? null : null,
+            typed_answer: q.type === 'typed' ? (ans as any).typedAnswer ?? null : null,
+          });
+        } catch (ansErr: any) {
+          // 400 = already answered (idempotent) — safe to ignore
+          if (ansErr?.response?.status !== 400) throw ansErr;
         }
-        setIsFinalSubmitted(true);
-        localStorage.removeItem(ATTEMPT_KEY);  // clean up persisted id
-        router.push(`/dashboard/quiz/${id}/results/${resolvedAttemptId}`);
       }
+
+      // Mark the attempt as complete
+      try {
+        await api.post(`/api/quizzes/attempts/${resolvedAttemptId}/complete/`);
+      } catch (completeErr: any) {
+        if (completeErr?.response?.status !== 400) throw completeErr;
+      }
+
+      setIsFinalSubmitted(true);
+      localStorage.removeItem(ATTEMPT_KEY);
+      router.push(`/dashboard/quiz/${id}/results/${resolvedAttemptId}`);
     } catch (e: any) {
       const detail = e?.response?.data?.error || e?.message || 'Unknown error';
       toast.error(`Submit failed: ${detail}`);
