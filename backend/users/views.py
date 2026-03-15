@@ -4,8 +4,12 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
-from .serializers import RegisterSerializer, UserProfileSerializer, LoginSerializer
+from .serializers import RegisterSerializer, UserProfileSerializer, UserProfileSerializer as UserSerializer, LoginSerializer
 import requests
+try:
+    from anymail.message import AnymailMessage
+except ImportError:
+    AnymailMessage = None
 
 User = get_user_model()
 
@@ -114,13 +118,25 @@ class PasswordResetRequestView(APIView):
             frontend_url = getattr(settings, 'FRONTEND_URL', 'https://rajjjquizai.vercel.app')
             reset_link = f"{frontend_url}/reset-password?uid={uid}&token={token}"
             
-            send_mail(
-                "Reset Your PurpleQuiz AI Password",
-                f"You requested a password reset.\n\nClick the link below to set a new password:\n{reset_link}\n\nIf you did not request this, please ignore this email.",
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
-                fail_silently=True,
-            )
+            subject = "Reset Your PurpleQuiz AI Password"
+            body = f"You requested a password reset for your PurpleQuiz AI account.\n\nClick the link below to set a new password:\n{reset_link}\n\nThis link is valid for 24 hours. If you did not request this, please ignore this email."
+
+            if AnymailMessage and settings.EMAIL_BACKEND == 'anymail.backends.sendgrid.EmailBackend':
+                msg = AnymailMessage(
+                    subject=subject,
+                    body=body,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[user.email],
+                )
+                msg.send()
+            else:
+                send_mail(
+                    subject,
+                    body,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    fail_silently=True,
+                )
             return Response({"status": "Instructions sent."})
         except User.DoesNotExist:
             # We return success to prevent email enumeration

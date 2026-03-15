@@ -79,13 +79,13 @@ class OpenRouterService:
                 self.url,
                 headers=headers,
                 data=json.dumps(payload),
-                timeout=25,  # Explicit 25s timeout per request
+                timeout=30,  # 30s timeout
             )
             
             if response.status_code == 429:
                 raise RateLimitError(f"Rate limited on {model}")
             
-            if response.status_code in [502, 503]:
+            if response.status_code in [502, 503, 504]:
                 raise AIServiceException(f"Model {model} unavailable (HTTP {response.status_code})")
 
             if response.status_code != 200:
@@ -94,11 +94,28 @@ class OpenRouterService:
             data = response.json()
             content = data['choices'][0]['message']['content'].strip()
             
-            if content.startswith("```"):
-                content = content.split("\n", 1)[1] if "\n" in content else content
-                content = content.rsplit("```", 1)[0]
-            
-            questions = json.loads(content)
+            # Use regex to find the JSON array in case of markdown wrapping or extra text
+            import re
+            json_match = re.search(r'\[\s*\{.*\}\s*\]', content, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(0)
+            else:
+                # Fallback to simple cleaning if regex doesn't find a perfect bracketed list
+                json_str = content
+                if json_str.startswith("```json"):
+                    json_str = json_str.replace("```json", "", 1).replace("```", "", 1).strip()
+                elif json_str.startswith("```"):
+                    json_str = json_str.replace("```", "", 1).replace("```", "", 1).strip()
+
+            try:
+                questions = json.loads(json_str)
+            except json.JSONDecodeError:
+                # Deep extraction: find anything between [ and ]
+                deep_match = re.search(r'\[.*\]', content, re.DOTALL)
+                if deep_match:
+                    questions = json.loads(deep_match.group(0))
+                else:
+                    raise InvalidResponseError("AI returned invalid JSON format")
             
             if isinstance(questions, dict) and "questions" in questions:
                 questions = questions["questions"]
@@ -106,20 +123,12 @@ class OpenRouterService:
             self.validate_ai_response(questions)
             return questions
 
+        except requests.exceptions.Timeout:
+            logger.warning(f"Timeout on model {model}")
+            raise RateLimitError("Timeout")
         except Exception as e:
-            # Try aggressive JSON extraction as a last resort
-            try:
-                import re
-                data = response.json()
-                content = data['choices'][0]['message']['content'].strip()
-                match = re.search(r'\[.*\]', content, re.DOTALL)
-                if match:
-                    questions = json.loads(match.group(0))
-                    self.validate_ai_response(questions)
-                    return questions
-            except:
-                pass
-            raise AIServiceException(f"JSON Parse Error: {str(e)}")
+            logger.error(f"Error calling {model}: {str(e)}")
+            raise AIServiceException(f"AI Service Error: {str(e)}")
 
     def call_grok(self, prompt, num_questions, topic):
         """Direct call to xAI Grok API."""

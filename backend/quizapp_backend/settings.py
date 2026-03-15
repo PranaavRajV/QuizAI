@@ -65,6 +65,8 @@ INSTALLED_APPS = [
     'social',
     'anymail',
     'notifications',
+    'cloudinary_storage',
+    'cloudinary',
 ]
 
 MIDDLEWARE = [
@@ -262,16 +264,34 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'OPTIONS',
+]
+
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://rajjjquizai.vercel.app')
 
 # Email Configuration
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'noreply@quizai.app'
-
 # Email
-EMAIL_BACKEND = 'anymail.backends.sendgrid.EmailBackend' if os.getenv('SENDGRID_API_KEY') else 'django.core.mail.backends.console.EmailBackend'
-ANYMAIL = {'SENDGRID_API_KEY': os.getenv('SENDGRID_API_KEY', 'dummy')}
-DEFAULT_FROM_EMAIL = 'hello@quizai.com'
+SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
+EMAIL_BACKEND = 'anymail.backends.sendgrid.EmailBackend' if SENDGRID_API_KEY else 'django.core.mail.backends.console.EmailBackend'
+ANYMAIL = {'SENDGRID_API_KEY': SENDGRID_API_KEY or 'dummy'}
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'hello@quizai.com')
+
+# Cloudinary Storage for Media (Avatars)
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
+}
+
+# Use Cloudinary for media files in production
+if not DEBUG and os.getenv('CLOUDINARY_CLOUD_NAME'):
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Cache (in-memory for dev; swap to Redis in production)
 CACHES = {

@@ -65,6 +65,13 @@ class QuizViewSet(viewsets.ModelViewSet):
             return QuizListSerializer
         return QuizSerializer
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.created_by != request.user:
+            return Response({"error": "You cannot delete a quiz you didn't create."}, status=status.HTTP_403_FORBIDDEN)
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         # Use serializer for input validation and sanitization

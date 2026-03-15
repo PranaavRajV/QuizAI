@@ -17,3 +17,5 @@ channels
 channels-redis
 celery
 redis
+cloudinary
+django-cloudinary-storage
