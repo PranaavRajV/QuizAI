@@ -1,158 +1,147 @@
-# 🧠 PurpleQuiz AI — Powered by Agentic AI
+# 🧠 PurpleQuiz AI — AI-Powered Quiz Platform
 
-[![GitHub Stars](https://img.shields.io/github/stars/PranaavRajV/QuizAI?style=for-the-badge)](https://github.com/PranaavRajV/QuizAI/stargazers)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Deploy Status](https://img.shields.io/badge/Deployment-Live-success?style=for-the-badge)](https://rajjjquizai-git-main-vpranaavraj-8259s-projects.vercel.app)
+PurpleQuiz AI is an advanced, agentic education platform that leverages Large Language Models (LLMs) to generate high-quality, personalized quizzes on any topic instantly. Built for real-time social competition and deep learning.
 
-PurpleQuiz AI is a next-generation education platform that uses Large Language Models (LLMs) to generate high-quality, personalized quizzes on any topic instantly. Built with a focus on premium aesthetics and real-time social competition.
-
-**Live Demo:** [rajjjquizai.vercel.app](https://rajjjquizai.vercel.app)
-
----
-
-## 🚀 Features
-
-- [x] **AI Quiz Generation**: Create quizzes on any topic (Coding, History, Medicine, etc.) with custom difficulty levels.
-- [x] **Intelligent Fallbacks**: Multi-model AI chain (Gemini 2.0, Llama 3.3, Mistral, Qwen) via OpenRouter to ensure high availability.
-- [x] **Real-time Social Dashboard**: Send and accept friend requests, see who's online, and track mutual progress.
-- [x] **Challenge System**: Challenge friends to specific quizzes and compete for the higher score.
-- [x] **Interactive Notifications**: Instant alerts for social actions with direct deep-linking to relevant pages.
-- [x] **Analytics & Heatmaps**: Visualize your performance across different subjects over time.
-- [x] **Dynamic Leaderboards**: Global and friend-only rankings based on accuracy and speed.
-- [x] **Premium UI**: Glassmorphic design with dark/light mode support and smooth micro-animations.
+## 🚀 Live Demo
+- **Frontend**: [https://rajjjquizai.vercel.app](https://rajjjquizai.vercel.app)
+- **Backend API**: [https://quizai-production.up.railway.app](https://quizai-production.up.railway.app)
+- **Test Account**: `demo@quizai.com` / `Demo1234!`
 
 ---
 
-## 🛠 Tech Stack
-
-| Layer | Technology |
-| :--- | :--- |
-| **Frontend** | Next.js 15+, Lucide Icons, Axios, Framer Motion |
-| **Backend** | Django 4.2+, DRF, PostgreSQL, Gunicorn |
-| **AI Engine** | OpenRouter (Gemini, Llama 3.3, Mistral fallbacks) |
-| **Auth** | JWT (SimpleJWT) + Google OAuth 2.0 |
-| **Deployment** | Vercel (Frontend), Railway (Backend & Database) |
+## 🏗 Architecture
+![Architecture Diagram](./architecture.svg)
 
 ---
 
-## 🏛 Architecture Decisions
-
-### 1. Separation of Concerns (Django + Next.js)
-Instead of a monolithic approach, we decoupled the UI and API. This allows for independent scaling, faster frontend iterations without re-deploying the server, and a cleaner developer experience.
-
-### 2. JWT over Session Auth
-We used **JSON Web Tokens (JWT)** for authentication. This makes the backend stateless (reducing DB hits for session lookups) and ensures the API is ready for a future mobile app (React Native/Flutter) which doesn't handle cookies like a browser.
-
-### 3. PostgreSQL Relational Model
-Relational data is critical for a quiz app. The hierarchy of `Quiz → Question → Choice` is rigidly structured, and PostgreSQL's ACID compliance ensures that a user's attempt record is never lost or corrupted during high-concurrency leaderboard updates.
-
-### 4. Model-Agnostic AI (OpenRouter)
-AI APIs can be volatile. We implemented a **Model Chain** using OpenRouter. If the primary model is rate-limited, the system automatically falls back to secondary models (Llama, Mistral, Qwen), ensuring the user always gets their quiz.
-
-### 5. Atomic Quiz Creation
-To prevent "zombie" quizzes (empty quizzes if AI generation fails halfway), we use `@transaction.atomic`. The `Quiz` record is only committed to the database once all associated `Questions` and `Choices` are successfully generated and saved.
-
-### 6. Denormalized Performance
-In the `UserAnswer` model, we store `is_correct` as a boolean field rather than calculating it on every request. This allows the results page and analytics dashboard to load instantly by performing a simple `Count()` rather than a multi-table join.
-
-### 7. Temporal Tracking
-`QuizAttempt` tracks both `started_at` and `completed_at`. This allows us to calculate not just the score, but the **velocity** (time taken per question), which is a key metric in our leaderboard ranking algorithm.
+## ✨ Features
+- **AI Quiz Generation**: Effortlessly generate quizzes via OpenRouter using Mistral 7B.
+- **Dynamic Question Types**: Support for both Multiple Choice (MCQ) and AI-evaluated Typed Answer questions.
+- **Secure Auth**: JWT authentication with silent token refresh for a seamless session.
+- **Social & Competition**: Friend system with online indicators and head-to-head challenges on identical quizzes.
+- **Real-time Multiplayer**: Global rooms powered by Django Channels and WebSockets.
+- **Analytics & History**: Comprehensive tracking of quiz history, success rates, and global leaderboards.
+- **Multi-channel Notifications**: In-app, browser push, and SendGrid email notifications.
+- **Public Sharing**: Share results via secure UUID-based public links.
+- **Responsive Design**: Premium dark-mode UI that works perfectly on mobile and desktop.
 
 ---
 
-## 📊 Database Schema
+## 🛠 How to Run Locally
 
-```text
-+----------------+       +----------------+       +----------------+
-|      User      |       |      Quiz      |       |    Question    |
-+----------------+       +----------------+       +----------------+
-| id (PK)        |  1:N  | id (PK)        |  1:N  | id (PK)        |
-| username       |------>| topic          |------>| quiz_id (FK)   |
-| email          |       | difficulty     |       | question_text  |
-| avatar_url     |       | created_by (FK)|       | explanation    |
-+----------------+       +----------------+       +----------------+
-        |                        |                        |
-        | 1:N                    | 1:N                    | 1:N
-        v                        v                        v
-+----------------+       +----------------+       +----------------+
-|  QuizAttempt   |       |   Challenge    |       |     Choice     |
-+----------------+       +----------------+       +----------------+
-| id (PK)        |       | id (PK)        |       | id (PK)        |
-| user_id (FK)   |       | challenger (FK)|       | question_fk    |
-| quiz_id (FK)   |       | challenged (FK)|       | choice_text    |
-| score          |       | status         |       | is_correct     |
-| started_at     |       +----------------+       +----------------+
-| completed_at   |
-+----------------+
+### Prerequisites
+- Node.js 18+
+- Python 3.11+
+- PostgreSQL
+- Redis
+
+### Backend Setup
+```bash
+git clone https://github.com/PranaavRajV/QuizAI.git
+cd QuizAI/backend
+
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+cp .env.example .env
+# Fill in values (see Environment Variables section)
+
+python manage.py migrate
+python manage.py runserver
 ```
 
----
+**Start Celery Worker (In a separate terminal)**
+```bash
+celery -A quizapp_backend worker -l info
+```
 
-## 🔗 API Reference
-
-| Method | Endpoint | Auth | Description |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/token/` | No | Login and receive JWT access/refresh tokens |
-| `PATCH` | `/api/users/auth/me/` | Yes | Update profile, bio, or avatar |
-| `POST` | `/api/quizzes/` | Yes | Generate a new AI quiz (Topic, Difficulty) |
-| `GET` | `/api/quizzes/<id>/` | Yes | Fetch quiz metadata and questions |
-| `POST` | `/api/quizzes/attempts/` | Yes | Submit a completed quiz attempt |
-| `GET` | `/api/social/friends/list_friends/` | Yes | Get current friends list + stats |
-| `POST` | `/api/social/friends/request/` | Yes | Send friend request to another user |
-| `GET` | `/api/social/leaderboard/global/` | Yes | Get top 50 users worldwide |
-
----
-
-## 💻 Local Setup
-
-### Backend (Django)
-1. **Clone & Enter Directory:** `cd backend`
-2. **Setup Venv:** `python -m venv .venv && source .venv/bin/activate`
-3. **Install Deps:** `pip install -r requirements.txt`
-4. **Env Vars:** Create `.env` (see section below)
-5. **Migrate:** `python manage.py migrate`
-6. **Run:** `python manage.py runserver`
-
-### Frontend (Next.js)
-1. **Clone & Enter Directory:** `cd quizapp_frontend`
-2. **Install Deps:** `npm install`
-3. **Env Vars:** Create `.env.local`
-4. **Run:** `npm run dev`
+### Frontend Setup
+```bash
+cd ../quizapp_frontend
+npm install
+cp .env.local.example .env.local
+# Set NEXT_PUBLIC_API_URL=http://localhost:8000
+npm run dev
+```
 
 ---
 
 ## 🔑 Environment Variables
 
 ### Backend (`.env`)
-- `SECRET_KEY`: Django secret key for cryptographic signing.
-- `DEBUG`: Set to `True` for local development.
-- `DATABASE_URL`: Connection string for PostgreSQL.
-- `OPENROUTER_API_KEY`: API key for AI generation.
-- `CORS_ORIGIN_FRONTEND`: URL of your frontend (e.g., `http://localhost:3000`).
-
-### Frontend (`.env.local`)
-- `NEXT_PUBLIC_API_URL`: URL of your backend (e.g., `http://localhost:8000`).
-- `NEXT_PUBLIC_GOOGLE_CLIENT_ID`: For Google OAuth integration.
-
----
-
-## 🧩 Challenges & Solutions
-
-### 1. AI JSON Inconsistency
-**Challenge**: Free-tier LLMs occasionally include markdown commentary (e.g., "Here is your JSON:") which breaks `json.loads()`.
-**Solution**: Implemented a robust regex-based extraction layer that identifies the `[` and `]` boundaries, coupled with a 5-step model fallback chain that retries with a different model if one fails.
-
-### 2. JWT Refresh Race Conditions
-**Challenge**: If multiple components trigger API calls simultaneously after a token expires, they all attempt to refresh the token at once, causing 401 errors.
-**Solution**: Wrapped the Axios refresh logic in a singleton pattern. Only the first request triggers the refresh; subsequent requests queue up and wait for the new token before proceeding.
+| Key | Description |
+| :--- | :--- |
+| `SECRET_KEY` | Django secret key |
+| `DEBUG` | Set to `True` for local development |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `REDIS_URL` | Redis connection for Channels/Celery |
+| `OPENROUTER_API_KEY` | Key for AI generation |
+| `SENDGRID_API_KEY` | Key for email delivery |
+| `ALLOWED_HOSTS` | `localhost,127.0.0.1` |
+| `CORS_ALLOWED_ORIGINS`| `http://localhost:3000` |
 
 ---
 
-## 🔮 Roadmap (What's Next)
+## 📊 Database Design Decisions
 
-- **Multiplayer Mode**: Real-time 1v1 quiz battles using WebSockets/Django Channels.
-- **Deep Sharing**: Integrated sharing buttons to post results directly to Twitter/LinkedIn.
-- **PDF Certificates**: Automatically generate a "Course Completion" PDF for users who score >90% on hard quizzes.
+### Models
+- **User**: Extended Django user with last_active, notification preferences, and bio.
+- **Quiz**: Topic, difficulty, and `settings` JSONField (timer, points, type).
+- **Question/Choice**: Relational structure for MCQ and Typed questions.
+- **QuizAttempt**: Stores attempt state, duration, and final scores.
+- **Friendship**: Directed relationship row with status (`pending/accepted`).
+- **Challenge**: Links two users to a single shared AI-generated Quiz instance.
+- **Notification**: User-specific event logs with read tracking.
+
+### Key Decisions
+- **Denormalized UserAnswer**: Stores `is_correct` boolean directly to avoid expensive joins during results rendering.
+- **Shared Challenge Instance**: Challenger and challenged use the exact same Quiz ID to ensure valid scoring comparisons.
+- **UUID Public Tokens**: Public share links use UUIDs to prevent sequential ID enumeration attacks.
+- **Leaderboard Caching**: Global results are cached for 5 minutes via Redis to maintain performance under load.
 
 ---
-**Developed by [Pranaav Raj V](https://github.com/PranaavRajV)**
+
+## 📡 API Structure
+
+- `POST /api/users/auth/register/` — Create account
+- `POST /api/users/auth/login/` — Get JWT tokens
+- `GET /api/users/auth/me/` — Get profile + unread counts
+- `POST /api/quizzes/` — Generate AI quiz (Rate limited: 10/hr)
+- `POST /api/quizzes/{id}/start/` — Begin an attempt
+- `POST /api/quizzes/attempts/{id}/submit/` — Single-request bulk answer submission
+- `GET /api/social/friends/` — List friends & online status
+- `POST /api/social/challenges/` — Send challenge (creates shared quiz)
+
+---
+
+## 🧩 Challenges Faced & Solutions
+
+1. **Submit Reliability**: Refactored the frontend to collect answers in local state and submit a single bulk payload, eliminating 404s and race conditions found in per-question submission.
+2. **Challenge Flow Access**: Resolved 403/404 errors for challenged users by extending `QuizViewSet` queryset permissions to include active challenge participants.
+3. **OpenRouter Timeouts**: Implemented exponential backoff and simplified fallback prompts for AI generation to handle free-tier latency spikes.
+4. **Auth Persistence**: Integrated `localStorage` fallbacks for `attemptId` to prevent data loss during JWT silent-refresh cycles.
+
+---
+
+## ✅ Features Implemented vs Skipped
+
+### Implemented
+- [x] Typed answer AI evaluation (Celery)
+- [x] Real-time multiplayer (WebSockets)
+- [x] Friends comparison on results
+- [x] Public UUID-based sharing
+- [x] Weekly digest emails
+
+### Skipped
+- [ ] **Note Upload**: Critical scope — prioritised robust generation from text prompts first.
+- [ ] **Native Mobile App**: Web app is fully responsive; native development requires a separate siloed stack.
+
+---
+
+## 🛠 Tech Stack
+- **Frontend**: Next.js 14, Tailwind CSS, Zustand, Axios
+- **Backend**: Django 5, DRF, SimpleJWT, Celery, Channels
+- **Database**: PostgreSQL, Redis
+- **Infra**: Vercel (Front), Railway (Back + DB + Redis)
+- **AI**: OpenRouter (Mistral 7B)

@@ -1,0 +1,117 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .bg { fill: #0A0A0A; }
+      .box { fill: #0A0A0A; stroke: #FFFFFF; stroke-width: 1; rx: 4; ry: 4; }
+      .text-main { 
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+        font-size: 18px; fill: #FFFFFF; text-anchor: middle; font-weight: 500; 
+      }
+      .text-sub { 
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+        font-size: 14px; fill: #A0A0A0; text-anchor: middle; 
+      }
+      .label-right { 
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+        font-size: 14px; fill: #CCCCCC; text-anchor: start; 
+      }
+      .label-center { 
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+        font-size: 14px; fill: #CCCCCC; text-anchor: middle; 
+      }
+      .line { fill: none; stroke: #FFFFFF; stroke-width: 2; stroke-linejoin: round; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FFFFFF" />
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1200" height="800" />
+
+  <!-- Nodes -->
+  
+  <!-- Browser -->
+  <g transform="translate(600, 60)">
+    <rect x="-130" y="-30" width="260" height="60" class="box" />
+    <text x="0" y="5" class="text-main">Browser / Mobile</text>
+  </g>
+
+  <!-- Vercel -->
+  <g transform="translate(600, 180)">
+    <rect x="-140" y="-30" width="280" height="60" class="box" />
+    <text x="0" y="-2" class="text-main">Vercel</text>
+    <text x="0" y="18" class="text-sub">Next.js 14</text>
+  </g>
+
+  <!-- Django -->
+  <g transform="translate(600, 300)">
+    <rect x="-160" y="-30" width="320" height="60" class="box" />
+    <text x="0" y="-2" class="text-main">Railway</text>
+    <text x="0" y="18" class="text-sub">Django REST Framework</text>
+  </g>
+
+  <!-- PostgreSQL -->
+  <g transform="translate(300, 440)">
+    <rect x="-120" y="-30" width="240" height="60" class="box" />
+    <text x="0" y="-2" class="text-main">PostgreSQL</text>
+    <text x="0" y="18" class="text-sub">(Railway)</text>
+  </g>
+
+  <!-- Redis -->
+  <g transform="translate(600, 440)">
+    <rect x="-120" y="-30" width="240" height="60" class="box" />
+    <text x="0" y="-2" class="text-main">Redis</text>
+    <text x="0" y="18" class="text-sub">(Railway)</text>
+  </g>
+
+  <!-- OpenRouter API -->
+  <g transform="translate(900, 440)">
+    <rect x="-120" y="-30" width="240" height="60" class="box" />
+    <text x="0" y="-2" class="text-main">OpenRouter AI</text>
+    <text x="0" y="18" class="text-sub">(external API)</text>
+  </g>
+
+  <!-- Celery Worker -->
+  <g transform="translate(600, 580)">
+    <rect x="-120" y="-30" width="240" height="60" class="box" />
+    <text x="0" y="5" class="text-main">Celery Worker</text>
+  </g>
+
+  <!-- SendGrid -->
+  <g transform="translate(600, 700)">
+    <rect x="-120" y="-30" width="240" height="60" class="box" />
+    <text x="0" y="5" class="text-main">SendGrid Email</text>
+  </g>
+
+  <!-- Connective Paths -->
+  
+  <path d="M 600 90 L 600 150" class="line" marker-end="url(#arrow)" />
+  <path d="M 600 210 L 600 270" class="line" marker-end="url(#arrow)" />
+  
+  <!-- Django out branches -->
+  <path d="M 600 330 L 600 370" class="line" />
+  <path d="M 600 370 L 300 370 L 300 410" class="line" marker-end="url(#arrow)" />
+  <path d="M 600 370 L 600 410" class="line" marker-end="url(#arrow)" />
+  <path d="M 600 370 L 900 370 L 900 410" class="line" marker-end="url(#arrow)" />
+  
+  <!-- Redis to Celery -->
+  <path d="M 600 470 L 600 550" class="line" marker-end="url(#arrow)" />
+  
+  <!-- Celery to SendGrid -->
+  <path d="M 600 610 L 600 670" class="line" marker-end="url(#arrow)" />
+
+  <!-- Text Labels for Connections -->
+  
+  <text x="615" y="125" class="label-right">HTTPS + WebSocket</text>
+  <text x="615" y="245" class="label-right">REST API calls</text>
+  
+  <!-- Branch labels -->
+  <text x="450" y="360" class="label-center">SQL (TCP)</text>
+  <text x="615" y="395" class="label-right">TCP</text>
+  <text x="750" y="360" class="label-center">HTTPS API</text>
+  
+  <!-- Lower labels -->
+  <text x="615" y="515" class="label-right">Redis Protocol</text>
+  <text x="615" y="645" class="label-right">SMTP / HTTPS API</text>
+
+</svg>
