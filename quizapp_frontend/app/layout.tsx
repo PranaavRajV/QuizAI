@@ -37,45 +37,34 @@ export default function RootLayout({
         `}} />
       </head>
       <body style={{ fontFamily: 'var(--font-body, Inter, system-ui, sans-serif)' }}>
-        {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? (
-          <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}>
-            <ThemeProvider>
-              <Toaster
-                position="top-right"
-                toastOptions={{
-                  style: {
-                    borderRadius: '9px',
-                    background: 'var(--bg-surface)',
-                    color: 'var(--text-primary)',
-                    fontSize: '13px',
-                    border: '1px solid var(--border-mid)',
-                    fontFamily: 'var(--font-body)',
-                    boxShadow: 'var(--shadow-md)',
-                  },
-                  success: {
-                    iconTheme: { primary: 'var(--success)', secondary: 'var(--bg-surface)' },
-                  },
-                  error: {
-                    iconTheme: { primary: 'var(--danger)', secondary: 'var(--bg-surface)' },
-                  },
-                }}
-              />
-              <OfflineBanner />
-              <ErrorBoundary>
-                {children}
-              </ErrorBoundary>
-            </ThemeProvider>
-          </GoogleOAuthProvider>
-        ) : (
-          /* Fallback for when Google Auth is not configured to prevent crash */
+        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "missing-client-id"}>
           <ThemeProvider>
-            <Toaster position="top-right" />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: {
+                  borderRadius: '9px',
+                  background: 'var(--bg-surface)',
+                  color: 'var(--text-primary)',
+                  fontSize: '13px',
+                  border: '1px solid var(--border-mid)',
+                  fontFamily: 'var(--font-body)',
+                  boxShadow: 'var(--shadow-md)',
+                },
+                success: {
+                  iconTheme: { primary: 'var(--success)', secondary: 'var(--bg-surface)' },
+                },
+                error: {
+                  iconTheme: { primary: 'var(--danger)', secondary: 'var(--bg-surface)' },
+                },
+              }}
+            />
             <OfflineBanner />
             <ErrorBoundary>
               {children}
             </ErrorBoundary>
           </ThemeProvider>
-        )}
+        </GoogleOAuthProvider>
       </body>
 
     </html>

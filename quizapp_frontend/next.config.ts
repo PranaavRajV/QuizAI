@@ -20,16 +20,6 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_API_URL: BACKEND_URL,
   },
-  eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    // Warning: Similarly to ESLint, this enables production builds to successfully
-    // complete even if your project has TypeScript errors.
-    ignoreBuildErrors: true,
-  },
   async rewrites() {
     return [
       {
