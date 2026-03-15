@@ -5,10 +5,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://quizai-production.up
 
 const api: AxiosInstance = axios.create({
   baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  // 120 second timeout — allows multi-model AI chain to try several fallbacks if needed
+  // Let axios infer content-type (especially for multipart/form-data)
+  // Default is application/json for object-based data.
   timeout: 120000,
 });
 
