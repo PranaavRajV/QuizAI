@@ -1,6 +1,7 @@
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from django.utils import timezone
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -189,8 +190,30 @@ class QuizViewSet(viewsets.ModelViewSet):
         return Response({"attempt_id": attempt.id}, status=status.HTTP_201_CREATED)
 
 class AttemptViewSet(viewsets.GenericViewSet):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     queryset = QuizAttempt.objects.all()
+
+    def create(self, request):
+        quiz_id = request.data.get('quiz') or request.data.get('quiz_id')
+        quiz = get_object_or_404(Quiz, id=quiz_id)
+
+        # Idempotent: return existing incomplete attempt
+        existing = QuizAttempt.objects.filter(
+            quiz=quiz,
+            user=request.user,
+            completed_at__isnull=True
+        ).first()
+
+        if existing:
+            return Response({"id": existing.id, "attempt_id": existing.id}, status=status.HTTP_200_OK)
+
+        # Create new attempt
+        attempt = QuizAttempt.objects.create(
+            quiz=quiz,
+            user=request.user,
+            total_questions=quiz.questions.count()
+        )
+        return Response({"id": attempt.id, "attempt_id": attempt.id}, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'])
     def answer(self, request, pk=None):
@@ -591,7 +614,11 @@ class RoomViewSet(viewsets.ModelViewSet):
         return RoomSerializer # Fallback
 
     def create(self, request, *args, **kwargs):
-        quiz_id = request.data.get('quiz_id')
+        quiz_id = request.data.get('quiz_id') or request.data.get('quiz')
+        time_per_q = request.data.get('time_per_question', 30)
+        points = request.data.get('points_per_question', 10)
+        max_p = request.data.get('max_participants', 10)
+
         quiz = get_object_or_404(Quiz, id=quiz_id)
         
         import string, random
@@ -601,14 +628,20 @@ class RoomViewSet(viewsets.ModelViewSet):
             host=request.user,
             quiz=quiz,
             room_code=code,
-            max_participants=quiz.quiz_config.get('max_participants', 10),
-            quiz_config=quiz.quiz_config,
+            max_participants=max_p,
+            quiz_config={
+                'time_per_question': time_per_q,
+                'points_per_question': points,
+            }
         )
         # Host joins automatically
         from .models import RoomParticipant
         RoomParticipant.objects.create(room=room, user=request.user, is_ready=True)
         
-        return Response(RoomSerializer(room).data, status=status.HTTP_201_CREATED)
+        return Response({
+            'room_code': room.room_code,
+            'room_id': room.id,
+        }, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['post'], url_path='join')
     def join_room(self, request):
@@ -652,3 +685,29 @@ class RoomViewSet(viewsets.ModelViewSet):
             
         participants = room.participants.all().order_by('-score')
         return Response(RoomParticipantSerializer(participants, many=True).data)
+
+class ShareQuizView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        quiz = get_object_or_404(Quiz, id=pk, created_by=request.user)
+
+        import uuid
+        if not quiz.share_token:
+            quiz.share_token = uuid.uuid4()
+            quiz.is_public = True
+            quiz.save()
+        
+        # Ensure it's public if we're sharing it
+        if not quiz.is_public:
+            quiz.is_public = True
+            quiz.save()
+
+        from django.conf import settings
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'https://rajjjquizai.vercel.app')
+        share_url = f"{frontend_url}/quiz/play/{quiz.share_token}"
+
+        return Response({
+            'share_token': str(quiz.share_token),
+            'share_url': share_url,
+        })

@@ -44,8 +44,8 @@ export default function TakeQuizPage() {
       }
 
       try {
-        const resp = await api.post(`/api/quizzes/${id}/start/`);
-        const newAttemptId = resp.data.attempt_id;
+        const resp = await api.post('/api/attempts/', { quiz: id });
+        const newAttemptId = resp.data.id;
         if (!newAttemptId) {
           toast.error('Could not start quiz — please try again.');
           setIsAttemptStarting(false);
@@ -55,16 +55,8 @@ export default function TakeQuizPage() {
         localStorage.setItem(ATTEMPT_KEY, String(newAttemptId));
         setAttemptId(newAttemptId);
       } catch (e: any) {
-        const existingAttemptId = e?.response?.data?.attempt_id;
-        if (existingAttemptId) {
-          // Already completed — redirect straight to results
-          localStorage.removeItem(ATTEMPT_KEY);
-          router.replace(`/dashboard/quiz/${id}/results/${existingAttemptId}`);
-          return; // navigating away, don't flip isAttemptStarting
-        } else {
-          console.error('Failed to start attempt', e?.response?.data);
-          toast.error('Could not start quiz — please refresh and try again.');
-        }
+        console.error('Failed to start attempt', e?.response?.data);
+        toast.error('Could not start quiz — please refresh and try again.');
       } finally {
         setIsAttemptStarting(false);
       }

@@ -262,6 +262,8 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://rajjjquizai.vercel.app')
+
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'noreply@quizai.app'
