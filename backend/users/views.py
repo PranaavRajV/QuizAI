@@ -94,6 +94,12 @@ class GoogleLoginView(APIView):
         })
 
 
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail
+from django.conf import settings
+
 class PasswordResetRequestView(APIView):
     permission_classes = (permissions.AllowAny,)
 
@@ -101,10 +107,23 @@ class PasswordResetRequestView(APIView):
         email = request.data.get('email')
         try:
             user = User.objects.get(email=email)
-            # In production: from django.contrib.auth.forms import PasswordResetForm; form = PasswordResetForm({'email': email}); form.save(...)
-            print(f"PASSWORD RESET REQUESTED FOR: {email}")
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            
+            # Using production frontend URL or fallback
+            frontend_url = getattr(settings, 'FRONTEND_URL', 'https://rajjjquizai.vercel.app')
+            reset_link = f"{frontend_url}/reset-password?uid={uid}&token={token}"
+            
+            send_mail(
+                "Reset Your PurpleQuiz AI Password",
+                f"You requested a password reset.\n\nClick the link below to set a new password:\n{reset_link}\n\nIf you did not request this, please ignore this email.",
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                fail_silently=True,
+            )
             return Response({"status": "Instructions sent."})
         except User.DoesNotExist:
+            # We return success to prevent email enumeration
             return Response({"status": "Instructions sent."})
 
 
@@ -112,12 +131,22 @@ class PasswordResetConfirmView(APIView):
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request):
-        email = request.data.get('email')
+        uid = request.data.get('uid')
+        token = request.data.get('token')
         new_password = request.data.get('password')
+        
+        if not uid or not token or not new_password:
+            return Response({"error": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-            user = User.objects.get(email=email)
+            user_id = force_str(urlsafe_base64_decode(uid))
+            user = User.objects.get(pk=user_id)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        if user is not None and default_token_generator.check_token(user, token):
             user.set_password(new_password)
             user.save()
             return Response({"status": "Password reset successful."})
-        except User.DoesNotExist:
-            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({"error": "Invalid or expired reset token"}, status=status.HTTP_400_BAD_REQUEST)
