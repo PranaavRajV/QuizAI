@@ -41,7 +41,7 @@ export default function PublicSharePage() {
                 </div>
             </div>
             <h1 className="text-2xl font-black text-white">{data.username}'s Performance</h1>
-            <p className="text-sm text-[#64748b]">Shared via QuizAI</p>
+            <p className="text-sm text-[#64748b]">Shared via PurpleQuiz AI</p>
         </div>
 
         <Card className="p-10 border-[#2e2e32] bg-[#161618]/50 backdrop-blur-xl relative overflow-hidden group">
@@ -74,7 +74,7 @@ export default function PublicSharePage() {
 
         <div className="flex flex-col gap-4">
             <Button className="w-full h-12 font-black uppercase tracking-widest text-xs bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-600/20 gap-2" onClick={() => router.push('/register')}>
-                <LogIn className="w-4 h-4" /> Join QuizAI & Compete
+                <LogIn className="w-4 h-4" /> Join PurpleQuiz AI & Compete
             </Button>
             <Button variant="secondary" className="w-full h-12 font-black uppercase tracking-widest text-xs border-[#2e2e32] gap-2">
                 <Share2 className="w-4 h-4" /> Share This Page

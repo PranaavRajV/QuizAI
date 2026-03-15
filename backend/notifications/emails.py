@@ -74,7 +74,7 @@ def send_weekly_summary(user, quizzes_this_week, avg_score, rank):
 
     send_notification_email(
         user,
-        "Your Weekly QuizAI Summary",
+        "Your Weekly PurpleQuiz AI Summary",
         "weekly_summary.html",
         {"user": user, "quizzes_this_week": quizzes_this_week, "avg_score": avg_score, "rank": rank}
     )

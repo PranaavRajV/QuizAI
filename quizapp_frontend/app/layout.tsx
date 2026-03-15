@@ -16,7 +16,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "QuizAI — AI-Powered Quiz Generator",
+  title: "PurpleQuiz AI — AI-Powered Quiz Generator",
   description: "Generate, take, and master any topic with AI-powered quizzes.",
 };
 

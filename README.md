@@ -1,10 +1,10 @@
-# 🧠 QuizAI — Powered by Agentic AI
+# 🧠 PurpleQuiz AI — Powered by Agentic AI
 
 [![GitHub Stars](https://img.shields.io/github/stars/PranaavRajV/QuizAI?style=for-the-badge)](https://github.com/PranaavRajV/QuizAI/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Deploy Status](https://img.shields.io/badge/Deployment-Live-success?style=for-the-badge)](https://rajjjquizai-git-main-vpranaavraj-8259s-projects.vercel.app)
 
-QuizAI is a next-generation education platform that uses Large Language Models (LLMs) to generate high-quality, personalized quizzes on any topic instantly. Built with a focus on premium aesthetics and real-time social competition.
+PurpleQuiz AI is a next-generation education platform that uses Large Language Models (LLMs) to generate high-quality, personalized quizzes on any topic instantly. Built with a focus on premium aesthetics and real-time social competition.
 
 **Live Demo:** [rajjjquizai.vercel.app](https://rajjjquizai.vercel.app)
 

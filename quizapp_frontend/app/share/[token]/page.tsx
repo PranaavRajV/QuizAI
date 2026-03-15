@@ -142,7 +142,7 @@ export default function SharedQuizPage() {
         </Card>
 
         <p className="text-[12px] text-[#94a3b8]">
-          Powered by QuizAI
+          Powered by PurpleQuiz AI
         </p>
       </div>
     );

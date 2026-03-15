@@ -35,7 +35,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <BrandSq />
             <span style={{ fontFamily: 'var(--head)', fontSize: '15px', fontWeight: 600, color: '#fff' }}>
-              QuizAI
+              PurpleQuiz AI
             </span>
           </div>
 

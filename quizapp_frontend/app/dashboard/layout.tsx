@@ -240,7 +240,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               color: 'var(--text-primary)',
               letterSpacing: '-0.03em',
             }}>
-              QuizAI
+              PurpleQuiz AI
             </span>
           </div>
         </Link>
