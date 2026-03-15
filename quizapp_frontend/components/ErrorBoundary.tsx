@@ -91,21 +91,24 @@ class ErrorBoundary extends Component<Props, State> {
               An unexpected error occurred. Don't worry, your data is safe. You can try refreshing the page or returning home.
             </p>
 
-            {process.env.NODE_ENV === 'development' && (
-              <pre style={{
-                textAlign: 'left',
-                padding: '16px',
-                background: 'var(--bg-elevated)',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '12px',
-                color: '#ef4444',
-                overflow: 'auto',
-                marginBottom: '32px',
-                maxHeight: '200px',
-              }}>
-                {this.state.error?.message}
-              </pre>
-            )}
+            {/* Production Debug: Always show error message to identify root cause */}
+            <pre style={{
+              textAlign: 'left',
+              padding: '16px',
+              background: 'var(--bg-elevated)',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '12px',
+              color: '#ef4444',
+              overflow: 'auto',
+              marginBottom: '32px',
+              maxHeight: '200px',
+              wordBreak: 'break-all',
+              whiteSpace: 'pre-wrap'
+            }}>
+              {this.state.error?.name}: {this.state.error?.message}
+              {"\n"}
+              {this.state.error?.stack}
+            </pre>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <Button onClick={this.handleReset} style={{ width: '100%', gap: '8px' }}>
