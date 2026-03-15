@@ -43,6 +43,7 @@ ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if h]
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -55,6 +56,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework_simplejwt',
     'django_filters',
+    'channels',
     
     # Local apps
     'users',
@@ -99,6 +101,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'quizapp_backend.wsgi.application'
+ASGI_APPLICATION = 'quizapp_backend.asgi.application'
 
 
 # Database configuration
@@ -279,8 +282,23 @@ CACHES = {
 # Leaderboard cache timeout (seconds)
 LEADERBOARD_CACHE_TIMEOUT = int(os.getenv('LEADERBOARD_CACHE_TIMEOUT', '300'))  # 5 min
 
-# Security hardening (override defaults in production)
 if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
+
+# Channels configuration
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
+
+# Celery configuration
+CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
+CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://localhost:6379')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_ALWAYS_EAGER = DEBUG # Run sync in dev for easier testing if no worker

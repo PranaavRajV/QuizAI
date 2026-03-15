@@ -8,8 +8,8 @@ const api: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  // 30 second timeout — prevents blank-screen hangs on slow AI generation
-  timeout: 30000,
+  // 120 second timeout — allows multi-model AI chain to try several fallbacks if needed
+  timeout: 120000,
 });
 
 // Request interceptor

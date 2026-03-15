@@ -8,9 +8,22 @@ https://docs.djangoproject.com/en/4.2/howto/deployment/asgi/
 """
 
 import os
-
+import django
 from django.core.asgi import get_asgi_application
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.auth import AuthMiddlewareStack
+from quizzes.middleware import JWTAuthMiddlewareStack
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'quizapp_backend.settings')
+django.setup()
 
-application = get_asgi_application()
+from quizzes.routing import websocket_urlpatterns
+
+application = ProtocolTypeRouter({
+    "http": get_asgi_application(),
+    "websocket": JWTAuthMiddlewareStack(
+        URLRouter(
+            websocket_urlpatterns
+        )
+    ),
+})

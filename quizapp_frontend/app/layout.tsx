@@ -37,7 +37,7 @@ export default function RootLayout({
         `}} />
       </head>
       <body style={{ fontFamily: 'var(--font-body, Inter, system-ui, sans-serif)' }}>
-        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER.apps.googleusercontent.com"}>
+        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
           <ThemeProvider>
             <Toaster
               position="top-right"

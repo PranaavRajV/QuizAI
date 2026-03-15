@@ -1,10 +1,12 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import QuizViewSet, AttemptViewSet, HistoryView, AnalyticsView
+from .views import QuizViewSet, AttemptViewSet, HistoryView, AnalyticsView, PublicPlayViewSet, RoomViewSet
 
 router = DefaultRouter()
-router.register(r'', QuizViewSet, basename='quiz')
+router.register(r'play', PublicPlayViewSet, basename='public-play')
+router.register(r'rooms', RoomViewSet, basename='room')
 router.register(r'attempts', AttemptViewSet, basename='attempt')
+router.register(r'', QuizViewSet, basename='quiz')
 
 urlpatterns = [
     path('history/', HistoryView.as_view({'get': 'list'}), name='quiz_history'),

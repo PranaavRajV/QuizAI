@@ -76,7 +76,7 @@ class OpenRouterService:
                 self.url,
                 headers=headers,
                 data=json.dumps(payload),
-                timeout=30  # Increased to 30s to handle slow free models
+                timeout=25,  # Explicit 25s timeout per request
             )
             
             if response.status_code == 429:
@@ -106,59 +106,156 @@ class OpenRouterService:
         except (requests.exceptions.RequestException, json.JSONDecodeError, KeyError) as e:
             raise AIServiceException(str(e))
 
-    def generate_questions(self, topic, difficulty, num_questions, user_id=None):
+    def _build_system_prompt(self, topic, difficulty, num_questions, settings=None):
         difficulty_guidance = {
             'easy': 'factual recall and basic concepts',
             'medium': 'application of concepts to scenarios',
-            'hard': 'analysis, synthesis, and complex problem solving'
+            'hard': 'analysis, synthesis, and complex problem solving',
         }
-        
         guidance = difficulty_guidance.get(difficulty, difficulty_guidance['medium'])
+
+        question_types = None
+        if settings:
+            question_types = settings.get('question_types')
+
+        type_instructions = ""
+        if question_types:
+            if set(question_types) == {'mcq'}:
+                type_instructions = "All questions must be multiple-choice (MCQ) with four options."
+            elif set(question_types) == {'typed'}:
+                type_instructions = (
+                    "All questions must be typed-answer questions. Do NOT include choices. "
+                    "Return objects with fields: question_text, correct_answer, explanation, type='typed'."
+                )
+            else:
+                type_instructions = (
+                    "Generate a mix of MCQ and typed-answer questions. "
+                    "For MCQ questions, include fields: question_text, choices (4 strings), correct_index, explanation, type='mcq'. "
+                    "For typed questions, include: question_text, correct_answer, explanation, type='typed'."
+                )
+
+        base_requirements = """
+REQUIREMENTS:
+1. Each MCQ question must have exactly one clearly correct answer and 3 highly plausible distractors.
+2. Questions and choices must be educationally accurate and clearly worded.
+3. Include a comprehensive "explanation" (2-3 sentences) that not only identifies the correct answer but also explains WHY it is correct and why other options might be misleading. This should feel like an expert tutor explaining the concept.
+4. Return ONLY a valid JSON array of objects. NO markdown, NO commentary.
+
+JSON SCHEMA (MCQ):
+[
+  {
+    "question_text": "string",
+    "choices": ["string1", "string2", "string3", "string4"],
+    "correct_index": 0,
+    "explanation": "string",
+    "type": "mcq"
+  }
+]
+
+For typed questions, omit the choices and correct_index fields and instead include:
+{
+  "question_text": "string",
+  "correct_answer": "string",
+  "explanation": "string",
+  "type": "typed"
+}
+"""
+
         system_prompt = f"""You are a professional educational assessment expert.
-        Generate a quiz with {num_questions} questions about "{topic}".
-        Difficulty Level: {difficulty.upper()} ({guidance}).
+Generate a quiz with {num_questions} questions about "{topic}".
+Difficulty Level: {difficulty.upper()} ({guidance}).
+{type_instructions}
+{base_requirements}
+"""
+        return system_prompt
+
+    def generate_questions(self, topic, difficulty, num_questions, user_id=None, settings=None):
+        """
+        Generate questions with explicit timeout and retry strategy:
+        - Attempt 1: Full request across available models.
+        - Attempt 2: Full retry if needed.
+        - Attempt 3: Retry with reduced (half) question count for latency reduction.
+        """
+        effective_num = num_questions
         
-        REQUIREMENTS:
-        1. Each question must have exactly one clearly correct answer and 3 highly plausible distractors.
-        2. Questions and choices must be educationally accurate and clearly worded.
-        3. Include a comprehensive "explanation" (2-3 sentences) that not only identifies the correct answer but also explains WHY it is correct and why other options might be misleading. This should feel like an expert tutor explaining the concept.
-        4. Return ONLY a valid JSON array of objects. NO markdown, NO commentary.
+        for attempt_phase in [1, 2, 3]:
+            if attempt_phase == 3:
+                effective_num = max(5, num_questions // 2)
+                logger.info(f"Phase 3: Reducing question count to {effective_num} to avoid timeout.")
+            else:
+                logger.info(f"Phase {attempt_phase}: Attempting to generate {effective_num} questions.")
+
+            system_prompt = self._build_system_prompt(
+                topic=topic,
+                difficulty=difficulty,
+                num_questions=effective_num,
+                settings=settings,
+            )
+
+            # We iterate through models in the chain
+            for model in self.MODEL_CHAIN:
+                try:
+                    questions = self.call_openrouter(model, system_prompt, effective_num, topic)
+                    if questions:
+                        return questions
+                except (RateLimitError, AIServiceException, requests.exceptions.Timeout) as e:
+                    logger.warning(f"Model {model} failed in Phase {attempt_phase}: {e}. Trying next model...")
+                    continue
+                except Exception as e:
+                    logger.error(f"Unexpected error with {model}: {e}")
+                    continue
         
-        JSON SCHEMA:
-        [
-          {{
-            "question_text": "string",
-            "choices": ["string1", "string2", "string3", "string4"],
-            "correct_index": 0,
-            "explanation": "string"
-          }}
-        ]"""
+        # If we reach here, everything failed
+        raise AIServiceException("AI is taking longer than usual. Please try again.")
 
-        last_error = None
-        for attempt_num, model in enumerate(self.MODEL_CHAIN, 1):
-            try:
-                logger.info(f"Attempting model: {model} (Attempt {attempt_num}/{len(self.MODEL_CHAIN)})")
-                questions = self.call_openrouter(model, system_prompt, num_questions, topic)
-                
-                if attempt_num > 1:
-                    logger.info(f"Success with model: {model} after {attempt_num} attempts")
-                else:
-                    logger.info(f"Success with primary model: {model}")
-                    
-                return questions
+    def evaluate_typed_answer(self, correct_answer, user_answer):
+        """
+        Lightweight helper for evaluating a single typed answer.
+        Returns dict: {\"is_correct\": bool, \"feedback\": str}
+        """
+        model = "google/gemini-2.0-flash-exp:free"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "HTTP-Referer": "http://localhost:3000",
+            "X-Title": "AI Quiz App - Typed Evaluation",
+            "Content-Type": "application/json",
+        }
+        prompt = (
+            "You are grading a short answer.\n"
+            f"The correct answer is: '{correct_answer}'.\n"
+            f"The user answered: '{user_answer}'.\n"
+            "Is this correct? Reply with JSON only, no markdown:\n"
+            "{ \"is_correct\": true/false, \"feedback\": \"one sentence explanation\" }"
+        )
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": "You are a precise grading assistant."},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.0,
+        }
 
-            except RateLimitError as e:
-                logger.warning(f"Model {model} rate limited, trying next...")
-                last_error = "rate_limit"
-                continue
-            except InvalidResponseError as e:
-                logger.warning(f"Invalid response from {model}, trying next...")
-                last_error = "invalid_response"
-                continue
-            except Exception as e:
-                logger.warning(f"Model {model} failed: {str(e)}, trying next...")
-                last_error = str(e)
-                continue
+        try:
+            response = requests.post(
+                self.url,
+                headers=headers,
+                data=json.dumps(payload),
+                timeout=25,
+            )
+            if response.status_code != 200:
+                raise AIServiceException(f"Typed evaluation failed ({response.status_code}): {response.text}")
 
-        logger.error(f"All models failed for quiz generation. User: {user_id}")
-        raise AllModelsFailedError(f"All {len(self.MODEL_CHAIN)} models failed. Last error: {last_error}")
+            data = response.json()
+            content = data['choices'][0]['message']['content'].strip()
+            if content.startswith("```"):
+                content = content.split("\n", 1)[1] if "\n" in content else content
+                content = content.rsplit("```", 1)[0]
+
+            result = json.loads(content)
+            is_correct = bool(result.get("is_correct"))
+            feedback = result.get("feedback") or ""
+            return {"is_correct": is_correct, "feedback": feedback}
+        except Exception as e:
+            logger.warning(f"Typed evaluation fallback (mark incorrect) due to error: {e}")
+            return {"is_correct": False, "feedback": "We could not automatically evaluate this answer."}

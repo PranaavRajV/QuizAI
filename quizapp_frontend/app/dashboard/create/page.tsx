@@ -13,10 +13,10 @@ import {
 /* ── rotating messages ───────────────────────────────────── */
 const MSGS = [
   "Consulting the digital oracle…",
-  "Brainstorming some tricky questions…",
+  "High-quality questions take a moment to bake…",
   "Sifting through the knowledge graph…",
   "Curating a perfect challenge for you…",
-  "Synthesizing educational insights…",
+  "Free AI models can be slow — thanks for your patience!",
 ];
 
 /* ── Difficulty pills config ─────────────────────────────── */
@@ -26,6 +26,9 @@ const DIFFICULTIES = [
   { id: 'hard',   Icon: Brain,  label: 'Hard',   desc: 'Critical analysis', accent: 'var(--danger)',        accentBg: 'var(--danger-subtle)',   accentBorder: 'var(--danger-border)' },
 ] as const;
 
+import { QuizCustomizationModal } from '@/components/quiz-customization-modal';
+import { QuizConfig } from '@/types/api';
+
 export default function CreateQuizPage() {
   const router = useRouter();
   const { createQuiz, isLoading, error, data: generatedQuiz } = useCreateQuiz();
@@ -34,6 +37,8 @@ export default function CreateQuizPage() {
   const [difficulty, setDifficulty]     = useState<'easy' | 'medium' | 'hard'>('medium');
   const [numQuestions, setNumQuestions] = useState(10);
   const [msgIdx, setMsgIdx]             = useState(0);
+  const [isModalOpen, setIsModalOpen]   = useState(false);
+  const [lastConfig, setLastConfig]     = useState<QuizConfig | null>(null);
 
   useEffect(() => {
     if (!isLoading) return;
@@ -41,20 +46,46 @@ export default function CreateQuizPage() {
     return () => clearInterval(id);
   }, [isLoading]);
 
-  const handleGenerate = async () => {
-    if (!topic.trim()) { toast.error('Please enter a topic first.'); return; }
+  const handleGenerateFromModal = async (config: QuizConfig) => {
+    setIsModalOpen(false);
+    setLastConfig(config);
     try {
-      await createQuiz({ topic, difficulty, num_questions: numQuestions });
+      await createQuiz({ 
+        topic: config.topic, 
+        difficulty: config.difficulty, 
+        num_questions: config.num_questions,
+        quiz_config: config 
+      }, 30000); // 30s timeout specifically for generation
       toast.success('Quiz generated!');
     } catch (e: any) {
-      const isTimeout = e.code === 'ECONNABORTED' || e.message?.includes('timeout');
-      const msg = isTimeout
-        ? 'AI is taking too long — please try a simpler topic or try again.'
-        : e.response?.data?.code === 'ALL_MODELS_FAILED'
-        ? 'AI is temporarily busy — try again in a moment.'
-        : e.response?.data?.message || e.response?.data?.error || 'AI service error. Try a different topic.';
-      toast.error(msg, { duration: 5000 });
+      handleError(e);
     }
+  };
+
+  const retryLastConfig = () => {
+    if (lastConfig) {
+      handleGenerateFromModal(lastConfig);
+    }
+  };
+
+  const handleError = (e: any) => {
+    const isTimeout = e.code === 'ECONNABORTED' || e.message?.includes('timeout');
+    const isRateLimit = e.response?.status === 429 || e.response?.data?.code === 'RATE_LIMIT';
+    
+    const msg = isTimeout
+      ? 'AI is taking longer than expected. The server is still working, check your "My Quizzes" page in a minute!'
+      : isRateLimit
+      ? 'AI is a bit busy right now. Please wait 30 seconds and try again.'
+      : e.response?.data?.code === 'ALL_MODELS_FAILED'
+      ? 'All free AI models are currently busy. Try a more specific topic or retry in a moment.'
+      : e.response?.data?.message || e.response?.data?.error || 'AI service error. Try a different topic.';
+    
+    toast.error(msg, { duration: 6000 });
+  };
+
+  const handleOpenModal = () => {
+    if (!topic.trim()) { toast.error('Please enter a topic first.'); return; }
+    setIsModalOpen(true);
   };
 
   /* ─── Loading state ──────────────────────────────────────── */
@@ -387,8 +418,13 @@ export default function CreateQuizPage() {
                   : error}
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={handleGenerate} style={{ flexShrink: 0, borderColor: 'var(--danger)', color: 'var(--danger)' }}>
-              Retry
+            <Button 
+               variant="outline" 
+               size="sm" 
+               onClick={retryLastConfig} 
+               style={{ flexShrink: 0, borderColor: 'var(--danger)', color: 'var(--danger)', gap: '6px' }}
+            >
+              <RotateCcw size={13} /> Retry
             </Button>
           </div>
         )}
@@ -397,13 +433,16 @@ export default function CreateQuizPage() {
         <Button
           variant="primary" size="lg"
           disabled={!topic.trim() || isLoading}
-          onClick={handleGenerate}
+          onClick={handleOpenModal}
           style={{ width: '100%', gap: '8px', justifyContent: 'center', boxShadow: topic.trim() ? '0 4px 14px var(--accent-subtle)' : 'none' }}
         >
           <Sparkles size={17} />
           Generate Quiz
           <ArrowRight size={15} />
         </Button>
+        <p style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '8px' }}>
+          * Free AI generation usually takes 30-60 seconds.
+        </p>
       </div>
 
       {/* RIGHT: tips sidebar */}
@@ -477,6 +516,13 @@ export default function CreateQuizPage() {
           </div>
         </section>
       </div>
+
+      <QuizCustomizationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onGenerate={handleGenerateFromModal}
+        isGenerating={isLoading}
+      />
     </div>
   );
 }

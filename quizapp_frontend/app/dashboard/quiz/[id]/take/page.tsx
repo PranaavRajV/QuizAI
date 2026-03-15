@@ -15,10 +15,13 @@ export default function TakeQuizPage() {
 
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedChoiceId, setSelectedChoiceId] = useState<number | null>(null);
+  const [typedAnswer, setTypedAnswer] = useState('');
   const [attemptId, setAttemptId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isQuitModalOpen, setIsQuitModalOpen] = useState(false);
+  const [isFinalSubmitted, setIsFinalSubmitted] = useState(false);
+  const [answers, setAnswers] = useState<Record<number, { choiceId?: number | null, typedAnswer?: string }>>({});
 
   // Initialize attempt
   useEffect(() => {
@@ -52,20 +55,35 @@ export default function TakeQuizPage() {
   };
 
   const handleNext = async () => {
-    if (!selectedChoiceId || !attemptId || !quiz) return;
+    const currentQuestion = quiz?.questions![currentIdx];
+    const isTyped = currentQuestion?.type === 'typed';
+    const isMcq = currentQuestion?.type === 'mcq';
+
+    const hasAnswer = isTyped ? typedAnswer.trim().length > 0 : !!selectedChoiceId;
+
+    if (!hasAnswer || !attemptId || !quiz || isFinalSubmitted) return;
+    
     setIsSubmitting(true);
     try {
       const question = quiz.questions![currentIdx];
 
-      // Submit the answer
+      // Locally store answer for navigation
+      setAnswers(prev => ({
+        ...prev,
+        [question.id]: isTyped ? { typedAnswer } : { choiceId: selectedChoiceId },
+      }));
+
+      // Submit the answer (idempotent per question)
       try {
         await api.post(`/api/quizzes/attempts/${attemptId}/answer/`, {
           question_id: question.id,
-          choice_id: selectedChoiceId,
+          choice_id: isMcq ? selectedChoiceId : null,
+          typed_answer: isTyped ? typedAnswer : null,
         });
       } catch (answerErr: any) {
         // If attempt already completed, redirect to results
         if (answerErr?.response?.status === 400) {
+          setIsFinalSubmitted(true);
           router.push(`/dashboard/quiz/${id}/results/${attemptId}`);
           return;
         }
@@ -73,8 +91,14 @@ export default function TakeQuizPage() {
       }
 
       if (currentIdx < quiz.questions!.length - 1) {
-        setCurrentIdx(prev => prev + 1);
-        setSelectedChoiceId(null);
+        const nextIdx = currentIdx + 1;
+        const nextQuestion = quiz.questions![nextIdx];
+        const previous = answers[nextQuestion.id];
+        
+        setCurrentIdx(nextIdx);
+        // Restore previous state if it exists
+        setSelectedChoiceId(previous?.choiceId ?? null);
+        setTypedAnswer(previous?.typedAnswer ?? '');
       } else {
         // Last question — complete the attempt
         try {
@@ -85,6 +109,7 @@ export default function TakeQuizPage() {
             throw completeErr;
           }
         }
+        setIsFinalSubmitted(true);
         // Always redirect to results after last question
         router.push(`/dashboard/quiz/${id}/results/${attemptId}`);
       }
@@ -115,9 +140,12 @@ export default function TakeQuizPage() {
   );
 
   const currentQuestion = quiz.questions[currentIdx];
+  const isTyped = currentQuestion.type === 'typed';
   const total = quiz.questions.length;
   const progress = ((currentIdx + 1) / total) * 100;
   const isLast = currentIdx === total - 1;
+
+  const canContinue = isTyped ? typedAnswer.trim().length > 0 : !!selectedChoiceId;
 
   return (
     <div style={{ maxWidth: '760px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '28px', paddingBottom: '60px' }}>
@@ -188,79 +216,128 @@ export default function TakeQuizPage() {
           {currentQuestion.question_text}
         </h2>
 
-        {/* Choices */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {currentQuestion.choices.map((choice) => {
-            const isSelected = selectedChoiceId === choice.id;
-            return (
-              <button
-                key={choice.id}
-                onClick={() => setSelectedChoiceId(choice.id)}
-                disabled={isSubmitting}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '16px',
-                  padding: '14px 18px',
-                  minHeight: '54px',
-                  borderRadius: 'var(--radius-md)',
-                  border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}`,
-                  background: isSelected ? 'var(--accent-subtle)' : 'var(--bg-elevated)',
-                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                  transition: 'all 120ms ease',
-                  textAlign: 'left',
-                  outline: 'none',
-                  boxShadow: isSelected ? '0 0 0 3px var(--accent-subtle)' : 'none',
-                }}
-                onMouseEnter={e => {
-                  if (!isSelected && !isSubmitting) {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border-hi)';
-                    (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-active)';
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (!isSelected) {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)';
-                    (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-elevated)';
-                  }
-                }}
-              >
-                <span style={{
-                  fontSize: '14.5px',
-                  fontWeight: 500,
-                  color: isSelected ? 'var(--accent)' : 'var(--text-primary)',
-                  lineHeight: 1.4,
-                  transition: 'color 120ms',
-                }}>
-                  {choice.choice_text}
-                </span>
+        {isTyped ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+             <textarea
+               value={typedAnswer}
+               onChange={(e) => setTypedAnswer(e.target.value)}
+               placeholder="Type your answer here..."
+               disabled={isSubmitting}
+               style={{
+                 width: '100%',
+                 minHeight: '120px',
+                 padding: '16px',
+                 borderRadius: 'var(--radius-md)',
+                 border: '1px solid var(--border)',
+                 background: 'var(--bg-elevated)',
+                 color: 'var(--text-primary)',
+                 fontSize: '15px',
+                 fontFamily: 'inherit',
+                 resize: 'vertical',
+                 outline: 'none',
+                 transition: 'border-color 0.2s',
+               }}
+               onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
+               onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
+             />
+             <p style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'right' }}>
+               {typedAnswer.length} / 500 characters
+             </p>
+          </div>
+        ) : (
+          /* Choices */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {currentQuestion.choices.map((choice) => {
+              const isSelected = selectedChoiceId === choice.id;
+              return (
+                <button
+                  key={choice.id}
+                  onClick={() => setSelectedChoiceId(choice.id)}
+                  disabled={isSubmitting}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '16px',
+                    padding: '14px 18px',
+                    minHeight: '54px',
+                    borderRadius: 'var(--radius-md)',
+                    border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}`,
+                    background: isSelected ? 'var(--accent-subtle)' : 'var(--bg-elevated)',
+                    cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                    transition: 'all 120ms ease',
+                    textAlign: 'left',
+                    outline: 'none',
+                    boxShadow: isSelected ? '0 0 0 3px var(--accent-subtle)' : 'none',
+                  }}
+                  onMouseEnter={e => {
+                    if (!isSelected && !isSubmitting) {
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border-hi)';
+                      (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-active)';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!isSelected) {
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)';
+                      (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-elevated)';
+                    }
+                  }}
+                >
+                  <span style={{
+                    fontSize: '14.5px',
+                    fontWeight: 500,
+                    color: isSelected ? 'var(--accent)' : 'var(--text-primary)',
+                    lineHeight: 1.4,
+                    transition: 'color 120ms',
+                  }}>
+                    {choice.choice_text}
+                  </span>
 
-                {/* Radio indicator */}
-                <div style={{
-                  width: '20px', height: '20px',
-                  borderRadius: '50%',
-                  border: `2px solid ${isSelected ? 'var(--accent)' : 'var(--border-mid)'}`,
-                  background: isSelected ? 'var(--accent-subtle)' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, transition: 'all 120ms ease',
-                }}>
-                  {isSelected && (
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent)' }} />
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+                  {/* Radio indicator */}
+                  <div style={{
+                    width: '20px', height: '20px',
+                    borderRadius: '50%',
+                    border: `2px solid ${isSelected ? 'var(--accent)' : 'var(--border-mid)'}`,
+                    background: isSelected ? 'var(--accent-subtle)' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0, transition: 'all 120ms ease',
+                  }}>
+                    {isSelected && (
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent)' }} />
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* Footer action */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+        <Button
+          variant="outline"
+          size="lg"
+          disabled={currentIdx === 0 || isSubmitting || isFinalSubmitted}
+          onClick={() => {
+            if (!quiz || isFinalSubmitted) return;
+            const prevIdx = Math.max(0, currentIdx - 1);
+            const prevQuestion = quiz.questions![prevIdx];
+            const saved = answers[prevQuestion.id];
+            
+            setCurrentIdx(prevIdx);
+            setSelectedChoiceId(saved?.choiceId ?? null);
+            setTypedAnswer(saved?.typedAnswer ?? '');
+          }}
+          style={{ minWidth: '140px' }}
+        >
+          Previous
+        </Button>
+
         <Button
           variant="primary"
           size="lg"
-          disabled={!selectedChoiceId || isSubmitting}
+          disabled={!canContinue || isSubmitting || isFinalSubmitted}
           onClick={handleNext}
           isLoading={isSubmitting}
           style={{ gap: '8px', boxShadow: '0 4px 14px var(--accent-subtle)', minWidth: '180px' }}

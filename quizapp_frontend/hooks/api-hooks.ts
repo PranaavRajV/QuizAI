@@ -60,18 +60,22 @@ export function useCreateQuiz() {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<Quiz | null>(null);
 
-  const createQuiz = async (payload: CreateQuizPayload) => {
+  const createQuiz = async (payload: CreateQuizPayload, timeoutOverride?: number) => {
     setIsLoading(true);
     setError(null);
     try {
-      const resp = await api.post<Quiz>('/api/quizzes/', payload);
+      const resp = await api.post<Quiz>('/api/quizzes/', payload, {
+        timeout: timeoutOverride || undefined
+      });
       setData(resp.data);
       return resp.data;
     } catch (e: any) {
       const msg = e.response?.data?.error || 'Failed to generate quiz';
       setError(msg);
       // Store the specific code if available for the component to use
-      (e as any).errorCode = e.response?.data?.code;
+      if (e.response?.data?.code) {
+        (e as any).errorCode = e.response?.data?.code;
+      }
       throw e;
     } finally {
       setIsLoading(false);

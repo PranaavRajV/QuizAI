@@ -22,6 +22,7 @@ export default function SharedQuizPage() {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [results, setResults] = useState<any>(null);
+  const [answers, setAnswers] = useState<Record<number, { choiceId: number | null }>>({});
 
   // Timer
   useEffect(() => {
@@ -54,14 +55,21 @@ export default function SharedQuizPage() {
     setIsSubmitting(true);
     try {
       const question = quiz.questions![currentIdx];
+      setAnswers(prev => ({
+        ...prev,
+        [question.id]: { choiceId: selectedChoiceId },
+      }));
       await api.post(`/api/quizzes/attempts/${attemptId}/answer/`, {
         question_id: question.id,
         choice_id: selectedChoiceId
       });
 
       if (currentIdx < quiz.questions!.length - 1) {
-        setCurrentIdx(prev => prev + 1);
-        setSelectedChoiceId(null);
+        const nextIdx = currentIdx + 1;
+        const nextQuestion = quiz.questions![nextIdx];
+        const saved = answers[nextQuestion.id];
+        setCurrentIdx(nextIdx);
+        setSelectedChoiceId(saved?.choiceId ?? null);
       } else {
         // Complete quiz
         const resp = await api.post(`/api/quizzes/attempts/${attemptId}/complete/`);
@@ -212,7 +220,23 @@ export default function SharedQuizPage() {
         </div>
       </Card>
 
-      <div className="flex justify-end">
+      <div className="flex justify-between gap-3">
+        <Button
+          variant="outline"
+          className="h-12 px-6"
+          disabled={currentIdx === 0 || isSubmitting}
+          onClick={() => {
+            if (!quiz) return;
+            const prevIdx = Math.max(0, currentIdx - 1);
+            const prevQuestion = quiz.questions![prevIdx];
+            const saved = answers[prevQuestion.id];
+            setCurrentIdx(prevIdx);
+            setSelectedChoiceId(saved?.choiceId ?? null);
+          }}
+        >
+          Previous
+        </Button>
+
         <Button 
           className="h-12 px-8 gap-2" 
           disabled={!selectedChoiceId || isSubmitting}

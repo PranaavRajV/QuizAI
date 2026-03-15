@@ -1,14 +1,16 @@
 "use client";
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuizzes } from '@/hooks/api-hooks';
 import { Button } from '@/components/ui-components';
 import { Skeleton } from '@/components/quiz-components';
-import { ChevronLeft, ChevronRight, Play, Plus, Share2, Layers } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, Plus, Share2, Layers, Swords } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Trash2 } from 'lucide-react';
+import api from '@/lib/axios';
 
 /* ─── Difficulty chip ─── */
 function DiffChip({ level }: { level: 'easy' | 'medium' | 'hard' }) {
@@ -32,7 +34,7 @@ function DiffChip({ level }: { level: 'easy' | 'medium' | 'hard' }) {
 }
 
 /* ─── Table row ─── */
-function QuizRow({ quiz, onShare, onDelete }: { quiz: any; onShare: () => void; onDelete: () => void }) {
+function QuizRow({ quiz, onShare, onDelete, onChallenge }: { quiz: any; onShare: () => void; onDelete: () => void; onChallenge: () => void }) {
   const [hov, setHov] = React.useState(false);
   return (
     <tr
@@ -52,17 +54,31 @@ function QuizRow({ quiz, onShare, onDelete }: { quiz: any; onShare: () => void; 
         <DiffChip level={quiz.difficulty} />
       </td>
       <td style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', textAlign: 'center' }}>
-        <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-          {quiz.num_questions}
-        </span>
+        {quiz.public_attempt_count > 0 ? (
+          <div>
+            <p style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>{quiz.public_attempt_count}</p>
+            <p style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Avg: {Math.round(quiz.public_avg_score)}%</p>
+          </div>
+        ) : (
+          <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>0</span>
+        )}
       </td>
       <td style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-          <Button variant="outline" size="sm" onClick={onShare} style={{ width: '32px', padding: 0, justifyContent: 'center' }}>
+          <Button variant="outline" size="sm" onClick={onShare} title="Copy share link" style={{ width: '32px', padding: 0, justifyContent: 'center' }}>
             <Share2 size={13} />
           </Button>
           <Button variant="outline" size="sm" onClick={onDelete} style={{ width: '32px', padding: 0, justifyContent: 'center', color: 'var(--danger)' }}>
             <Trash2 size={13} />
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onChallenge} 
+            title="Battle Friends" 
+            style={{ border: '1px solid var(--warn)', color: 'var(--warn)', gap: '6px' }}
+          >
+            <Swords size={12} /> Battle
           </Button>
           <Link href={`/dashboard/quiz/${quiz.id}/take`}>
             <Button variant="primary" size="sm" style={{ gap: '6px' }}>
@@ -76,15 +92,23 @@ function QuizRow({ quiz, onShare, onDelete }: { quiz: any; onShare: () => void; 
 }
 
 export default function QuizzesPage() {
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const { data, isLoading, deleteQuiz } = useQuizzes(page);
   const [quizToDelete, setQuizToDelete] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const copyShareLink = (token: string) => {
-    const url = `${window.location.origin}/share/${token}`;
-    navigator.clipboard.writeText(url);
-    toast.success('Share link copied!');
+  const copyShareLink = async (quiz: any) => {
+    try {
+      // Ensure the quiz is public first
+      const resp = await api.post(`/api/quizzes/${quiz.id}/share/`);
+      const token = resp.data.share_token;
+      const url = `${window.location.origin}/quiz/play/${token}`;
+      navigator.clipboard.writeText(url);
+      toast.success('Public share link copied!');
+    } catch (err) {
+      toast.error('Failed to generate share link');
+    }
   };
 
   const th = (text: string, align?: 'center' | 'right') => (
@@ -108,7 +132,7 @@ export default function QuizzesPage() {
             My Quizzes
           </h1>
           <p style={{ fontSize: '13.5px', color: 'var(--text-tertiary)' }}>
-            All your AI-generated learning challenges.
+            All your AI-generated learning challenges. Shared quizzes track public plays.
           </p>
         </div>
         <Link href="/dashboard/create">
@@ -147,16 +171,16 @@ export default function QuizzesPage() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
               <colgroup>
-                <col style={{ width: '42%' }} />
+                <col style={{ width: '38%' }} />
                 <col style={{ width: '14%' }} />
-                <col style={{ width: '12%' }} />
+                <col style={{ width: '16%' }} />
                 <col style={{ width: '32%' }} />
               </colgroup>
               <thead>
                 <tr>
                   {th('Topic')}
                   {th('Difficulty')}
-                  {th('Questions', 'center')}
+                  {th('Public Plays', 'center')}
                   {th('Actions', 'right')}
                 </tr>
               </thead>
@@ -165,8 +189,16 @@ export default function QuizzesPage() {
                   <QuizRow 
                     key={quiz.id} 
                     quiz={quiz} 
-                    onShare={() => copyShareLink(quiz.share_token)} 
+                    onShare={() => copyShareLink(quiz)} 
                     onDelete={() => setQuizToDelete(quiz)}
+                    onChallenge={async () => {
+                      try {
+                        const resp = await api.post('/api/quizzes/rooms/', { quiz_id: quiz.id });
+                        router.push(`/room/${resp.data.room_code}`);
+                      } catch (e) {
+                        toast.error('Failed to create room');
+                      }
+                    }}
                   />
                 ))}
               </tbody>

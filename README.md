@@ -6,14 +6,14 @@
 
 QuizAI is a next-generation education platform that uses Large Language Models (LLMs) to generate high-quality, personalized quizzes on any topic instantly. Built with a focus on premium aesthetics and real-time social competition.
 
-**Live Demo:** [rajjjquizai-git-main-vpranaavraj-8259s-projects.vercel.app](https://rajjjquizai-git-main-vpranaavraj-8259s-projects.vercel.app)
+**Live Demo:** [rajjjquizai.vercel.app](https://rajjjquizai.vercel.app)
 
 ---
 
 ## 🚀 Features
 
 - [x] **AI Quiz Generation**: Create quizzes on any topic (Coding, History, Medicine, etc.) with custom difficulty levels.
-* [x] **Intelligent Fallbacks**: Multi-model AI chain (Gemini 2.0, Llama 3.3, Mistral) via OpenRouter to ensure 99.9% uptime.
+- [x] **Intelligent Fallbacks**: Multi-model AI chain (Gemini 2.0, Llama 3.3, Mistral, Qwen) via OpenRouter to ensure high availability.
 - [x] **Real-time Social Dashboard**: Send and accept friend requests, see who's online, and track mutual progress.
 - [x] **Challenge System**: Challenge friends to specific quizzes and compete for the higher score.
 - [x] **Interactive Notifications**: Instant alerts for social actions with direct deep-linking to relevant pages.
@@ -27,9 +27,9 @@ QuizAI is a next-generation education platform that uses Large Language Models (
 
 | Layer | Technology |
 | :--- | :--- |
-| **Frontend** | Next.js 15+, Tailwind CSS, Lucide Icons, Axios, Framer Motion |
+| **Frontend** | Next.js 15+, Lucide Icons, Axios, Framer Motion |
 | **Backend** | Django 4.2+, DRF, PostgreSQL, Gunicorn |
-| **AI Engine** | OpenRouter (Gemini, Llama 3.3, Claude fallbacks) |
+| **AI Engine** | OpenRouter (Gemini, Llama 3.3, Mistral fallbacks) |
 | **Auth** | JWT (SimpleJWT) + Google OAuth 2.0 |
 | **Deployment** | Vercel (Frontend), Railway (Backend & Database) |
 
@@ -47,12 +47,15 @@ We used **JSON Web Tokens (JWT)** for authentication. This makes the backend sta
 Relational data is critical for a quiz app. The hierarchy of `Quiz → Question → Choice` is rigidly structured, and PostgreSQL's ACID compliance ensures that a user's attempt record is never lost or corrupted during high-concurrency leaderboard updates.
 
 ### 4. Model-Agnostic AI (OpenRouter)
-AI APIs can be volatile. We implemented a **Model Chain** using OpenRouter. If Gemini is rate-limited, the system automatically falls back to Llama 3.3, then Mistral, ensuring the user always gets their quiz.
+AI APIs can be volatile. We implemented a **Model Chain** using OpenRouter. If the primary model is rate-limited, the system automatically falls back to secondary models (Llama, Mistral, Qwen), ensuring the user always gets their quiz.
 
-### 5. Denormalized Performance
+### 5. Atomic Quiz Creation
+To prevent "zombie" quizzes (empty quizzes if AI generation fails halfway), we use `@transaction.atomic`. The `Quiz` record is only committed to the database once all associated `Questions` and `Choices` are successfully generated and saved.
+
+### 6. Denormalized Performance
 In the `UserAnswer` model, we store `is_correct` as a boolean field rather than calculating it on every request. This allows the results page and analytics dashboard to load instantly by performing a simple `Count()` rather than a multi-table join.
 
-### 6. Temporal Tracking
+### 7. Temporal Tracking
 `QuizAttempt` tracks both `started_at` and `completed_at`. This allows us to calculate not just the score, but the **velocity** (time taken per question), which is a key metric in our leaderboard ranking algorithm.
 
 ---

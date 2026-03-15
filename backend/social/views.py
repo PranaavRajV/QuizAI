@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db.models import Q, Avg, Count
 from django.utils import timezone
+from django.db import transaction
 from django.core.cache import cache
 from django.conf import settings as django_settings
 from .models import Friendship, Challenge, ScoreShare
@@ -215,7 +216,8 @@ class ChallengeViewSet(viewsets.ModelViewSet):
         user = self.request.user
         return Challenge.objects.filter(Q(challenger=user) | Q(challenged=user)).order_by('-created_at')
 
-    def create(self, request):
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
         challenged_user_id = request.data.get('challenged_user_id')
         topic = request.data.get('topic')
         difficulty = request.data.get('difficulty', 'medium')

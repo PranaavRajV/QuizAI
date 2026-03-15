@@ -16,6 +16,7 @@ export interface User {
 export interface Choice {
   id: number;
   choice_text: string;
+  is_correct?: boolean; // Only present in results view
 }
 
 export interface Question {
@@ -23,6 +24,8 @@ export interface Question {
   question_text: string;
   explanation: string;
   order: number;
+  type: 'mcq' | 'typed';
+  correct_answer?: string; // Only for results
   choices: Choice[];
 }
 
@@ -35,6 +38,8 @@ export interface Quiz {
   created_at: string;
   share_token: string;
   questions?: Question[];
+  public_attempt_count?: number;
+  public_avg_score?: number;
 }
 
 export interface UserAnswer {
@@ -42,6 +47,8 @@ export interface UserAnswer {
   question: number;
   selected_choice: number | null;
   is_correct: boolean;
+  typed_answer?: string;
+  feedback?: string;
 }
 
 export interface QuizAttempt {
@@ -55,7 +62,34 @@ export interface QuizAttempt {
   started_at: string;
   completed_at: string | null;
   is_completed: boolean;
+  evaluation_status: 'pending' | 'processing' | 'completed';
   answers?: UserAnswer[];
+  quiz_details?: Question[]; // Added for results review
+}
+
+export interface RoomParticipant {
+  id: number;
+  user: number;
+  username: string;
+  avatar_url?: string | null;
+  is_ready: boolean;
+  score: number;
+  rank?: number;
+}
+
+export interface Room {
+  id: number;
+  room_code: string;
+  host: number;
+  host_name: string;
+  quiz: number;
+  quiz_topic: string;
+  status: 'waiting' | 'active' | 'completed';
+  max_participants: number;
+  participants: RoomParticipant[];
+  created_at: string;
+  started_at?: string;
+  completed_at?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -76,10 +110,21 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface QuizConfig {
+  topic: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  num_questions: number;
+  max_participants?: number;
+  time_per_question?: number;
+  points_per_question?: number;
+  question_types?: ('mcq' | 'typed')[];
+}
+
 export interface CreateQuizPayload {
   topic: string;
   difficulty: 'easy' | 'medium' | 'hard';
   num_questions: number;
+  quiz_config?: QuizConfig;
 }
 
 export interface LoginPayload {

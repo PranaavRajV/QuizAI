@@ -12,3 +12,8 @@ requests
 django-anymail
 django-ratelimit
 Pillow
+daphne
+channels
+channels-redis
+celery
+redis

@@ -14,14 +14,25 @@ import React, { useState, useRef } from 'react';
 import { useFriends } from '@/hooks/social/useFriends';
 import ShareMenu from '@/components/ShareMenu';
 import ShareModal from '@/components/ShareModal';
+import api from '@/lib/axios';
+import { toast } from 'react-hot-toast';
 
 export default function ResultsPage() {
   const router = useRouter();
   const { id, attemptId } = useParams() as { id: string, attemptId: string };
-  const { data: result, isLoading: resultLoading } = useAttempt(attemptId);
-  const { data: quiz, isLoading: quizLoading } = useQuiz(id);
+  const { data: result, isLoading: resultLoading, refetch } = useAttempt(attemptId);
   const { friends } = useFriends();
   
+  // Polling logic for async evaluation
+  React.useEffect(() => {
+    if (result && result.evaluation_status === 'processing') {
+      const interval = setInterval(() => {
+        refetch();
+      }, 2000);
+      return () => clearInterval(interval);
+    }
+  }, [result, refetch]);
+
   const [showShare, setShowShare] = useState(false);
   const [shareMode, setShareMode] = useState<'share' | 'challenge'>('share');
   const resultCardRef = useRef<HTMLDivElement>(null!);
@@ -30,23 +41,23 @@ export default function ResultsPage() {
 
   // Auto-expand wrong answers on load
   React.useEffect(() => {
-    if (quiz?.questions && result?.answers) {
+    if (result?.quiz_details && result?.answers) {
       const newExpanded: Record<number, boolean> = {};
-      quiz.questions.forEach(q => {
+      result.quiz_details.forEach(q => {
         const ans = result.answers?.find(a => a.question === q.id);
-        if (ans && !ans.is_correct) {
+        if (ans && !ans.is_correct && result.evaluation_status === 'completed') {
           newExpanded[q.id] = true;
         }
       });
       setExpandedQuestions(newExpanded);
     }
-  }, [quiz, result]);
+  }, [result]);
 
   const toggleExpand = (questionId: number) => {
     setExpandedQuestions(prev => ({ ...prev, [questionId]: !prev[questionId] }));
   };
 
-  if (resultLoading || quizLoading) {
+  if (resultLoading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '20px' }}>
         <div className="qs-spinner" style={{ width: '40px', height: '40px', border: '3px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'qs-spin 0.8s linear infinite' }} />
@@ -55,7 +66,7 @@ export default function ResultsPage() {
     );
   }
 
-  if (!result || !quiz) {
+  if (!result || !result.quiz_details) {
     return (
       <div style={{ padding: '80px 20px', textAlign: 'center' }}>
         <h3 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)' }}>Results not found</h3>
@@ -86,7 +97,7 @@ export default function ResultsPage() {
              <RotateCcw size={14} /> Retake
            </Button>
            <ShareMenu 
-             quizTopic={quiz.topic}
+             quizTopic={result.quiz_topic}
              score={result.score}
              attemptId={attemptId}
              onOpenFriends={() => { setShareMode('share'); setShowShare(true); }}
@@ -211,7 +222,7 @@ export default function ResultsPage() {
          </div>
 
          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {quiz.questions?.map((question, idx) => {
+            {result.quiz_details?.map((question, idx) => {
                const userAnswer = result.answers?.find(a => a.question === question.id);
                const isCorrect = userAnswer?.is_correct;
                const selectedChoice = question.choices.find(c => c.id === userAnswer?.selected_choice);
@@ -240,7 +251,7 @@ export default function ResultsPage() {
                            <div>
                               <h4 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.5 }}>{question.question_text}</h4>
                               <p style={{ fontSize: '13px', color: isCorrect ? 'var(--success)' : 'var(--danger)', fontWeight: 600, marginTop: '6px' }}>
-                                 {isCorrect ? 'Correct Answer' : 'Incorrect Answer'}
+                                 {isCorrect ? 'Correct Answer' : (question.type === 'typed' && result.evaluation_status === 'processing') ? 'Evaluating...' : 'Incorrect Answer'}
                               </p>
                            </div>
                         </div>
@@ -252,14 +263,23 @@ export default function ResultsPage() {
                      {isExpanded && (
                         <div style={{ padding: '0 24px 24px 68px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-                              <div style={{ padding: '12px 16px', borderRadius: 'var(--radius-md)', background: isCorrect ? 'var(--success-subtle)' : 'var(--danger-subtle)', border: '1px solid transparent' }}>
-                                 <p style={{ fontSize: '10px', fontWeight: 800, color: isCorrect ? 'var(--success)' : 'var(--danger)', textTransform: 'uppercase', marginBottom: '4px' }}>Your Response</p>
-                                 <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{selectedChoice?.choice_text || "Skipped"}</p>
+                              <div style={{ 
+                                padding: '12px 16px', 
+                                borderRadius: 'var(--radius-md)', 
+                                background: isCorrect ? 'var(--success-subtle)' : (question.type === 'typed' && result.evaluation_status === 'processing') ? 'var(--bg-elevated)' : 'var(--danger-subtle)', 
+                                border: '1px solid transparent' 
+                              }}>
+                                 <p style={{ fontSize: '10px', fontWeight: 800, color: isCorrect ? 'var(--success)' : 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Your Response</p>
+                                 <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                   {question.type === 'typed' ? (userAnswer?.typed_answer || "No response") : (selectedChoice?.choice_text || "Skipped")}
+                                 </p>
                               </div>
-                              {!isCorrect && (
+                              {(!isCorrect && result.evaluation_status === 'completed') && (
                                  <div style={{ padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--success-subtle)', border: '1px solid transparent' }}>
-                                    <p style={{ fontSize: '10px', fontWeight: 800, color: 'var(--success)', textTransform: 'uppercase', marginBottom: '4px' }}>Correct Choice</p>
-                                    <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{correctChoice?.choice_text}</p>
+                                    <p style={{ fontSize: '10px', fontWeight: 800, color: 'var(--success)', textTransform: 'uppercase', marginBottom: '4px' }}>Correct Answer</p>
+                                    <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                      {question.type === 'typed' ? question.correct_answer : correctChoice?.choice_text}
+                                    </p>
                                  </div>
                               )}
                            </div>
@@ -288,8 +308,16 @@ export default function ResultsPage() {
 
                               <div style={{ position: 'relative', zIndex: 1 }}>
                                  <p style={{ fontSize: '14px', color: 'var(--text-primary)', lineHeight: 1.7, fontWeight: 500 }}>
-                                    <span style={{ color: 'var(--success)', fontWeight: 700 }}>The correct choice is "{correctChoice?.choice_text}".</span>{' '}
-                                    {question.explanation || "No further details provided by the AI for this question."}
+                                    {result.evaluation_status === 'processing' ? (
+                                      <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Evaluating your response with AI...</span>
+                                    ) : (
+                                      <>
+                                        <span style={{ color: 'var(--success)', fontWeight: 700 }}>
+                                          The correct answer is "{question.type === 'typed' ? question.correct_answer : correctChoice?.choice_text}".
+                                        </span>{' '}
+                                        {userAnswer?.feedback || question.explanation || "No further details provided by the AI for this question."}
+                                      </>
+                                    )}
                                  </p>
                                  
                                  {!isCorrect && (
@@ -314,19 +342,36 @@ export default function ResultsPage() {
       </section>
 
       {/* ── Results Footer ── */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
          <Button variant="outline" size="md" onClick={() => router.push('/dashboard')} style={{ gap: '8px' }}>
-            <ArrowLeft size={16} /> Back to Dashboard
+            <ArrowLeft size={16} /> Dashboard
+         </Button>
+         <Button 
+            variant="outline" 
+            size="md" 
+            style={{ gap: '8px', border: '1px solid var(--accent)', color: 'var(--accent)' }}
+            onClick={async () => {
+              try {
+                const resp = await api.post(`/api/quizzes/${id}/share/`);
+                const url = `${window.location.origin}/quiz/play/${resp.data.share_token}`;
+                navigator.clipboard.writeText(url);
+                toast.success('Public play link copied!');
+              } catch (e) {
+                toast.error('Failed to share publicly');
+              }
+            }}
+         >
+            <Share2 size={16} /> Share Publicly
          </Button>
          <Button variant="primary" size="md" onClick={() => router.push('/dashboard/create')} style={{ gap: '8px' }}>
-            <Plus size={16} /> Generate New Quiz
+            <Plus size={16} /> New Quiz
          </Button>
       </div>
 
       {showShare && (
         <ShareModal 
           attemptId={attemptId}
-          quizName={quiz.topic}
+          quizName={result.quiz_topic}
           score={result.score}
           initialMode={shareMode}
           onClose={() => setShowShare(false)}
