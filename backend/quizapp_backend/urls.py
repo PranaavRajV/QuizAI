@@ -41,5 +41,14 @@ urlpatterns = [
     path('api/history/', include('quizzes.urls_history')), 
     path('api/social/', include('social.urls')),
     path('api/notifications/', include('notifications.urls')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+# Serve media files (avatars) in production even if DEBUG=False
+from django.urls import re_path
+from django.views.static import serve
+urlpatterns += [
+    re_path(r'^media/(?P<path>.*)$', serve, {
+        'document_root': settings.MEDIA_ROOT,
+    }),
+]
 

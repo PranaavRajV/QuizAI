@@ -261,9 +261,8 @@ export function useUpdateProfile() {
     try {
       const formData = new FormData();
       formData.append('avatar', file);
-      const resp = await api.patch('/api/users/auth/me/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      // Let Axios automatically infer 'multipart/form-data' and generate the boundary
+      const resp = await api.patch('/api/users/auth/me/', formData);
       if (resp.data.id) setUser(resp.data);
       return resp.data;
     } catch (e: any) {
