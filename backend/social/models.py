@@ -55,7 +55,7 @@ class Challenge(models.Model):
 
     challenger = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='challenges_sent', on_delete=models.CASCADE)
     challenged = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='challenges_received', on_delete=models.CASCADE)
-    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='challenges')
     challenger_attempt = models.ForeignKey(QuizAttempt, related_name='challenge_challenger_attempts', on_delete=models.SET_NULL, null=True, blank=True)
     challenged_attempt = models.ForeignKey(QuizAttempt, related_name='challenge_challenged_attempts', on_delete=models.SET_NULL, null=True, blank=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
