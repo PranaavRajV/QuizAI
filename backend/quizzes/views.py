@@ -233,6 +233,132 @@ class AttemptViewSet(viewsets.GenericViewSet):
         return Response({"is_correct": user_answer.is_correct}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
+    @transaction.atomic
+    def submit(self, request, pk=None):
+        """
+        Single-shot submit: accepts all answers + completes the attempt atomically.
+
+        Request body:
+          {
+            "answers": [
+              {"question": <int>, "choice": <int|null>, "typed_answer": "<str|null>"},
+              ...
+            ]
+          }
+        """
+        attempt = self.get_object()
+        if attempt.is_completed:
+            return Response({"error": "Attempt already completed"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if attempt.user and attempt.user != request.user:
+            return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+        answers_data = request.data.get('answers', [])
+
+        for ans in answers_data:
+            question_id = ans.get('question')
+            choice_id   = ans.get('choice')
+            typed_answer = ans.get('typed_answer')
+
+            try:
+                question = Question.objects.get(id=question_id, quiz=attempt.quiz)
+            except Question.DoesNotExist:
+                return Response(
+                    {"error": f"Question {question_id} not found in this quiz"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            defaults = {}
+            if question.type == 'mcq':
+                try:
+                    selected_choice = Choice.objects.get(id=choice_id, question=question)
+                except Choice.DoesNotExist:
+                    return Response(
+                        {"error": f"Choice {choice_id} not found for question {question_id}"},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+                defaults['selected_choice'] = selected_choice
+                defaults['is_correct'] = selected_choice.is_correct
+                defaults['typed_answer'] = None
+            else:
+                defaults['typed_answer'] = typed_answer
+                defaults['selected_choice'] = None
+                defaults['is_correct'] = False
+
+            UserAnswer.objects.update_or_create(
+                attempt=attempt,
+                question=question,
+                defaults=defaults,
+            )
+
+        # ── Mark the attempt as complete ───────────────────────────────────
+        all_answers = UserAnswer.objects.filter(attempt=attempt)
+        correct_count = all_answers.filter(is_correct=True).count()
+
+        attempt.correct_count = correct_count
+        attempt.score = (correct_count / attempt.total_questions) * 100 if attempt.total_questions > 0 else 0
+        attempt.completed_at = timezone.now()
+        attempt.is_completed = True
+
+        has_typed = all_answers.filter(question__type='typed').exists()
+        attempt.evaluation_status = 'processing' if has_typed else 'completed'
+        attempt.save()
+
+        if has_typed:
+            try:
+                evaluate_typed_answers.delay(attempt.id)
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(
+                    f"Failed to enqueue typed evaluation task (non-fatal): {e}"
+                )
+
+        # Update public analytics
+        if not attempt.user or attempt.quiz.is_public:
+            quiz = attempt.quiz
+            quiz.public_attempt_count += 1
+            total_score = (quiz.public_avg_score * (quiz.public_attempt_count - 1)) + attempt.score
+            quiz.public_avg_score = total_score / quiz.public_attempt_count
+            quiz.save(update_fields=['public_attempt_count', 'public_avg_score'])
+
+        # Check challenges (non-fatal)
+        try:
+            from social.models import Challenge
+            challenges = Challenge.objects.filter(quiz=attempt.quiz, status__in=['pending', 'active'])
+            for challenge in challenges:
+                updated = False
+                if challenge.challenger == request.user:
+                    challenge.challenger_attempt = attempt
+                    updated = True
+                elif challenge.challenged == request.user:
+                    challenge.challenged_attempt = attempt
+                    updated = True
+                if updated:
+                    challenge.save()
+                if challenge.challenger_attempt and challenge.challenged_attempt and challenge.status != 'completed':
+                    challenge.status = 'completed'
+                    challenge.save()
+                    winner = challenge.winner
+                    try:
+                        notify_challenge_completed.delay(
+                            challenge.challenger.id, challenge.challenged.id,
+                            challenge.challenger_attempt.score, challenge.challenged_attempt.score,
+                            (winner == challenge.challenger)
+                        )
+                        notify_challenge_completed.delay(
+                            challenge.challenged.id, challenge.challenger.id,
+                            challenge.challenged_attempt.score, challenge.challenger_attempt.score,
+                            (winner == challenge.challenged)
+                        )
+                    except Exception:
+                        pass
+        except Exception as challenge_err:
+            import logging
+            logging.getLogger(__name__).warning(f"Challenge post-processing failed (non-fatal): {challenge_err}")
+
+        return Response(QuizAttemptSerializer(attempt).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'])
     def complete(self, request, pk=None):
         attempt = self.get_object()
         if attempt.is_completed:

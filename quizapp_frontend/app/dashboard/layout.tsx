@@ -105,55 +105,37 @@ function NavItem({
 }) {
   return (
     <Link href={href}>
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '10px',
-        padding: '8px 11px', borderRadius: 'var(--radius-md)',
-        cursor: 'pointer', fontFamily: 'var(--font-body)',
-        fontSize: '13px', fontWeight: active ? 600 : 400,
-        letterSpacing: '-0.01em',
-        color: active ? 'var(--text-primary)' : 'var(--text-tertiary)',
-        background: active ? 'var(--bg-elevated)' : 'transparent',
-        border: active ? '1px solid var(--border)' : '1px solid transparent',
-        transition: 'all 120ms ease',
-        marginBottom: '1px',
-        position: 'relative',
-      }}
-      onMouseEnter={e => {
-        if (!active) {
-          const el = e.currentTarget as HTMLDivElement;
-          el.style.background = 'var(--bg-elevated)';
-          el.style.color = 'var(--text-primary)';
-        }
-      }}
-      onMouseLeave={e => {
-        if (!active) {
-          const el = e.currentTarget as HTMLDivElement;
-          el.style.background = 'transparent';
-          el.style.color = 'var(--text-tertiary)';
-        }
-      }}>
-        {active && (
-          <div style={{
-            position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)',
-            width: '3px', height: '16px', borderRadius: '0 3px 3px 0',
-            background: 'var(--accent)',
-          }} />
-        )}
+      <div 
+        className={active ? 'glass-panel' : 'hover-lift'}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '10px',
+          padding: '10px 12px', borderRadius: 'var(--radius-md)',
+          cursor: 'pointer', fontFamily: 'var(--font-body)',
+          fontSize: '13px', fontWeight: active ? 600 : 500,
+          color: active ? 'var(--accent)' : 'var(--text-tertiary)',
+          background: active ? 'var(--accent-subtle)' : 'transparent',
+          border: active ? '1px solid var(--accent-border)' : '1px solid transparent',
+          transition: 'all 120ms ease',
+          marginBottom: '2px',
+          position: 'relative',
+        }}
+      >
         <Icon
-          size={15}
+          size={16}
           style={{
             flexShrink: 0,
             color: active ? 'var(--accent)' : 'currentColor',
-            opacity: active ? 1 : 0.7,
+            opacity: active ? 1 : 0.6,
           }}
         />
         <span style={{ flex: 1 }}>{label}</span>
         {badgeCount !== undefined && badgeCount > 0 && (
           <span style={{
             background: 'var(--accent)', color: '#fff',
-            fontSize: '10px', fontWeight: 700,
+            fontSize: '10px', fontWeight: 800,
             padding: '1px 6px', borderRadius: 'var(--radius-pill)',
             lineHeight: '16px', minWidth: '18px', textAlign: 'center',
+            boxShadow: '0 2px 4px var(--accent-subtle)'
           }}>
             {badgeCount}
           </span>
@@ -468,25 +450,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
         {/* Notification Soft Prompt */}
         {showSoftPrompt && (
-          <div style={{
-            position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000,
-            width: '320px', background: 'var(--bg-surface)',
-            border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)',
-            padding: '20px', boxShadow: 'var(--shadow-xl)',
-            animation: 'slide-up 0.3s ease-out',
-          }}>
-            <h4 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '8px', color: 'var(--text-primary)' }}>
-              Enable Notifications?
-            </h4>
-            <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginBottom: '16px', lineHeight: 1.5 }}>
-              Stay updated when friends challenge you or send requests while you're away.
-            </p>
+          <div 
+            className="glass-panel"
+            style={{
+              position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000,
+              width: '320px', 
+              borderRadius: 'var(--radius-xl)',
+              padding: '24px', 
+              boxShadow: 'var(--shadow-xl)',
+              animation: 'pop-in 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+              border: '1px solid var(--accent-border)'
+            }}
+          >
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: '16px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-md)', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Sparkles size={20} color="#fff" />
+              </div>
+              <div>
+                <h4 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
+                  Enable Live Alerts?
+                </h4>
+                <p style={{ fontSize: '12.5px', color: 'var(--text-tertiary)', lineHeight: 1.5 }}>
+                  Get notified for challenges and friend requests while you're away.
+                </p>
+              </div>
+            </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <Button size="sm" variant="primary" onClick={handleAllowNotifications} style={{ flex: 1 }}>
                 Allow
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => { setShowSoftPrompt(false); localStorage.setItem('notif_prompt_seen', 'true'); }} style={{ flex: 1 }}>
-                Later
+              <Button size="sm" variant="ghost" onClick={() => { setShowSoftPrompt(false); localStorage.setItem('notif_prompt_seen', 'true'); }} style={{ flex: 1, color: 'var(--text-muted)' }}>
+                Maybe Later
               </Button>
             </div>
           </div>

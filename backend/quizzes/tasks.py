@@ -3,6 +3,7 @@ from django.utils import timezone
 
 from .models import QuizAttempt, UserAnswer
 from ai_service.openrouter import OpenRouterService
+from notifications.emails import send_challenge_completed as send_email_sync
 
 
 @shared_task
@@ -50,3 +51,14 @@ def evaluate_typed_answers(attempt_id: int):
     attempt.evaluation_status = 'completed'
     attempt.save(update_fields=['correct_count', 'score', 'evaluation_status'])
 
+@shared_task
+def notify_challenge_completed(user_id, opponent_id, your_score, their_score, won):
+    """Async task for sending challenge completion emails."""
+    from users.models import User
+    try:
+        user = User.objects.get(id=user_id)
+        opponent = User.objects.get(id=opponent_id)
+        send_email_sync(user, opponent, your_score, their_score, won)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Async notification task failed: {e}")

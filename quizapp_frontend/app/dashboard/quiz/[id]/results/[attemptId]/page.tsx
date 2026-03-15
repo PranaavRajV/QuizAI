@@ -108,12 +108,20 @@ export default function ResultsPage() {
       </div>
 
       {/* ── Summary Card ── */}
-      <section style={{ 
-        background: 'var(--bg-surface)', border: '1px solid var(--border)', 
-        borderRadius: 'var(--radius-lg)', padding: '54px 40px',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-        gap: '32px', position: 'relative', overflow: 'hidden'
-      }}>
+      <section 
+        className="glass-panel animate-in"
+        style={{ 
+          borderRadius: 'var(--radius-xl)', padding: '60px 40px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
+          gap: '32px', position: 'relative', overflow: 'hidden',
+          boxShadow: 'var(--shadow-xl)',
+          border: '1px solid var(--accent-border)'
+        }}
+      >
+        {/* Celebration Background */}
+        {result.score >= 80 && (
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.1, background: 'radial-gradient(circle at center, var(--accent) 0%, transparent 70%)' }} />
+        )}
          <div style={{ position: 'absolute', top: '-40px', right: '-40px', opacity: 0.05 }}>
             {msg.icon}
          </div>
@@ -230,12 +238,17 @@ export default function ResultsPage() {
                const isExpanded = expandedQuestions[question.id];
 
                return (
-                  <div key={question.id} style={{ 
-                     background: 'var(--bg-surface)', border: '1px solid var(--border)', 
-                     borderRadius: 'var(--radius-lg)', overflow: 'hidden',
-                     borderLeft: `4px solid ${isCorrect ? 'var(--success)' : 'var(--danger)'}`,
-                     transition: 'transform 150ms ease'
-                  }}>
+                  <div 
+                    key={question.id} 
+                    className="animate-in"
+                    style={{ 
+                      background: 'var(--bg-surface)', border: '1px solid var(--border)', 
+                      borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+                      borderLeft: `4px solid ${isCorrect ? 'var(--success)' : 'var(--danger)'}`,
+                      transition: 'transform 150ms ease',
+                      animationDelay: `${idx * 0.1}s`
+                    }}
+                  >
                      <div 
                         onClick={() => toggleExpand(question.id)}
                         style={{ padding: '20px 24px', cursor: 'pointer', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '20px' }}

@@ -49,35 +49,48 @@ export default function SharedQuizPage() {
     }
   };
 
-  const handleNext = async () => {
+  // Next Question — save answer to state, navigate locally (no API call)
+  const handleNext = () => {
+    if (!selectedChoiceId || !quiz) return;
+    const question = quiz.questions![currentIdx];
+    const updatedAnswers = {
+      ...answers,
+      [question.id]: { choiceId: selectedChoiceId },
+    };
+    setAnswers(updatedAnswers);
+
+    const nextIdx = currentIdx + 1;
+    const nextQuestion = quiz.questions![nextIdx];
+    const saved = updatedAnswers[nextQuestion.id];
+    setCurrentIdx(nextIdx);
+    setSelectedChoiceId(saved?.choiceId ?? null);
+  };
+
+  // Finish Quiz — submit all answers in one shot
+  const handleFinish = async () => {
     if (!selectedChoiceId || !attemptId || !quiz) return;
-    
+
+    const question = quiz.questions![currentIdx];
+    const finalAnswers = {
+      ...answers,
+      [question.id]: { choiceId: selectedChoiceId },
+    };
+
+    const formatted = Object.entries(finalAnswers).map(([qId, ans]) => ({
+      question: Number(qId),
+      choice: (ans as any).choiceId ?? null,
+      typed_answer: null,
+    }));
+
     setIsSubmitting(true);
     try {
-      const question = quiz.questions![currentIdx];
-      setAnswers(prev => ({
-        ...prev,
-        [question.id]: { choiceId: selectedChoiceId },
-      }));
-      await api.post(`/api/quizzes/attempts/${attemptId}/answer/`, {
-        question_id: question.id,
-        choice_id: selectedChoiceId
+      const resp = await api.post(`/api/quizzes/attempts/${attemptId}/submit/`, {
+        answers: formatted,
       });
-
-      if (currentIdx < quiz.questions!.length - 1) {
-        const nextIdx = currentIdx + 1;
-        const nextQuestion = quiz.questions![nextIdx];
-        const saved = answers[nextQuestion.id];
-        setCurrentIdx(nextIdx);
-        setSelectedChoiceId(saved?.choiceId ?? null);
-      } else {
-        // Complete quiz
-        const resp = await api.post(`/api/quizzes/attempts/${attemptId}/complete/`);
-        setResults(resp.data);
-        setIsCompleted(true);
-      }
+      setResults(resp.data);
+      setIsCompleted(true);
     } catch (e) {
-      alert("Failed to submit answer.");
+      alert("Failed to submit quiz. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -237,15 +250,26 @@ export default function SharedQuizPage() {
           Previous
         </Button>
 
-        <Button 
-          className="h-12 px-8 gap-2" 
-          disabled={!selectedChoiceId || isSubmitting}
-          onClick={handleNext}
-          isLoading={isSubmitting}
-        >
-          {currentIdx === quiz.questions!.length - 1 ? 'Finish Quiz' : 'Next Question'}
-          <ChevronRight className="w-4 h-4" />
-        </Button>
+        {currentIdx === quiz.questions!.length - 1 ? (
+          <Button
+            className="h-12 px-8 gap-2"
+            disabled={!selectedChoiceId || isSubmitting}
+            onClick={handleFinish}
+            isLoading={isSubmitting}
+          >
+            Finish Quiz
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        ) : (
+          <Button
+            className="h-12 px-8 gap-2"
+            disabled={!selectedChoiceId || isSubmitting}
+            onClick={handleNext}
+          >
+            Next Question
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -62,9 +62,14 @@
 
   --shadow-sm:  0 1px 3px 0 rgba(0,0,0,.35), 0 1px 2px -1px rgba(0,0,0,.25);
   --shadow-md:  0 4px 12px 0 rgba(0,0,0,.45), 0 2px 4px -2px rgba(0,0,0,.30);
+  --shadow-lg:  0 10px 25px -5px rgba(0,0,0,.5), 0 8px 10px -6px rgba(0,0,0,.4);
   --shadow-xl:  0 20px 48px -12px rgba(0,0,0,.65);
 
+  --glass:      rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+
   --ease:       cubic-bezier(.28,.11,.29,1);
+  --ease-out:   cubic-bezier(0, 0, 0.2, 1);
   --dur:        140ms;
 
   /* Legacy aliases (keeps old code working) */
@@ -138,7 +143,11 @@
 
   --shadow-sm:  0 1px 3px 0 rgba(0,0,0,.08), 0 1px 2px -1px rgba(0,0,0,.06);
   --shadow-md:  0 4px 12px 0 rgba(0,0,0,.10), 0 2px 4px -2px rgba(0,0,0,.06);
+  --shadow-lg:  0 10px 25px -5px rgba(0,0,0,.04), 0 8px 10px -6px rgba(0,0,0,.04);
   --shadow-xl:  0 20px 48px -12px rgba(0,0,0,.18);
+
+  --glass:      rgba(0, 0, 0, 0.01);
+  --glass-border: rgba(0, 0, 0, 0.05);
 
   /* Legacy aliases */
   --ink:   var(--text-primary);
@@ -288,9 +297,28 @@ input, textarea, select { font-family: inherit; }
 /* ═══════ SPINNER ═══════ */
 @keyframes qs-spin    { to { transform: rotate(360deg); } }
 @keyframes qs-pulse   { 0%,100% { opacity:1; } 50% { opacity:.4; } }
-@keyframes slide-up   { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
-@keyframes slide-down { from { opacity:0; transform:translate(-50%, -12px); } to { opacity:1; transform:translate(-50%, 0); } }
 @keyframes fade-in    { from { opacity:0; } to { opacity:1; } }
+@keyframes pop-in     { from { opacity:0; transform:scale(0.96); } to { opacity:1; transform:scale(1); } }
+@keyframes shiver     { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
+
+.glass-panel {
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+}
+
+.hover-lift {
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.active-push:active {
+  transform: scale(0.98);
+}
 
 /* Accessibility: visible focus ring on keyboard navigation */
 :focus-visible {

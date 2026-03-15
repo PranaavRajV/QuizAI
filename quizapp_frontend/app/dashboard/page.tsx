@@ -68,43 +68,29 @@ export default function DashboardPage() {
 
       {/* ── Stats Grid ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-        <StatCard 
-          label="Avg Score" 
-          value={`${avgPerformance}%`}
-          sub="Last 30 days"
-          icon={<Award size={18} />}
-          accent="var(--accent)"
-        />
-        <StatCard 
-          label="Quizzes Taken" 
-          value={analytics?.total_quizzes || 0} 
-          sub="Total attempts"
-          icon={<BookOpen size={18} />}
-        />
-        <StatCard 
-          label="Best Topic" 
-          value={analytics?.topics?.[0]?.topic || 'N/A'} 
-          sub={analytics?.topics?.[0] ? `${analytics.topics[0].avg_score}% avg` : 'No data yet'}
-          icon={<Target size={18} />}
-          accent="var(--success)"
-        />
-        <StatCard 
-          label="Learning Trend" 
-          value={`${analytics?.trend >= 0 ? '+' : ''}${analytics?.trend || 0}%`} 
-          sub="Vs previous week"
-          icon={<TrendingUp size={18} />}
-          accent="var(--warn)"
-        />
+        {[
+          { label: "Avg Score", value: `${avgPerformance}%`, sub: "Last 30 days", icon: <Award size={18} />, accent: "var(--accent)" },
+          { label: "Quizzes Taken", value: analytics?.total_quizzes || 0, sub: "Total attempts", icon: <BookOpen size={18} /> },
+          { label: "Best Topic", value: analytics?.topics?.[0]?.topic || 'N/A', sub: analytics?.topics?.[0] ? `${analytics.topics[0].avg_score}% avg` : 'No data yet', icon: <Target size={18} />, accent: "var(--success)" },
+          { label: "Learning Trend", value: `${analytics?.trend >= 0 ? '+' : ''}${analytics?.trend || 0}%`, sub: "Vs previous week", icon: <TrendingUp size={18} />, accent: "var(--warn)" }
+        ].map((s, i) => (
+          <div key={i} className="animate-in" style={{ animationDelay: `${i * 0.1}s` }}>
+            <StatCard {...s} />
+          </div>
+        ))}
       </div>
 
       {/* ── Main Content Split ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: '20px' }}>
         
         {/* Left: Recent Quizzes Table */}
-        <section style={{ 
-          background: 'var(--bg-surface)', border: '1px solid var(--border)', 
-          borderRadius: 'var(--radius-lg)', overflow: 'hidden', display: 'flex', flexDirection: 'column'
-        }}>
+        <section 
+          className="glass-panel animate-in"
+          style={{ 
+            borderRadius: 'var(--radius-lg)', overflow: 'hidden', display: 'flex', flexDirection: 'column',
+            animationDelay: '0.4s'
+          }}
+        >
           <div style={{ 
             padding: '16px 20px', borderBottom: '1px solid var(--border)', 
             display: 'flex', alignItems: 'center', justifyContent: 'space-between' 
@@ -132,8 +118,8 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentQuizzes.map((quiz: any) => (
-                    <tr key={quiz.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 120ms' }}>
+                  {recentQuizzes.map((quiz: any, idx: number) => (
+                    <tr key={quiz.id} className="hover-lift" style={{ borderBottom: '1px solid var(--border)', transition: 'background 120ms' }}>
                       <td style={{ padding: '14px 20px' }}>
                         <p style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)' }}>{quiz.topic}</p>
                         <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>{quiz.num_questions} Questions</p>

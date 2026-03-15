@@ -22,7 +22,6 @@ export default function TakeQuizPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isQuitModalOpen, setIsQuitModalOpen] = useState(false);
-  const [isFinalSubmitted, setIsFinalSubmitted] = useState(false);
   const [answers, setAnswers] = useState<Record<number, { choiceId?: number | null, typedAnswer?: string }>>({});
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -77,75 +76,67 @@ export default function TakeQuizPage() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const handleNext = async () => {
-    const currentQuestion = quiz?.questions![currentIdx];
+  // ── Next Question: pure local navigation, no API call ────────────────
+  const handleNext = () => {
+    if (!quiz) return;
+    const currentQuestion = quiz.questions![currentIdx];
     const isTyped = currentQuestion?.type === 'typed';
-    const isMcq = currentQuestion?.type === 'mcq';
 
-    const hasAnswer = isTyped ? typedAnswer.trim().length > 0 : !!selectedChoiceId;
-
-    // Resolve attemptId — state first, then localStorage backup
-    const resolvedAttemptId = attemptId ?? (Number(localStorage.getItem(ATTEMPT_KEY)) || null);
-
-    if (!hasAnswer || !resolvedAttemptId || !quiz || isFinalSubmitted) {
-      if (!resolvedAttemptId) {
-        toast.error('Session lost. Please refresh and start the quiz again.');
-      }
-      return;
-    }
-
-    const question = quiz.questions![currentIdx];
-
-    // ── Step 1: Save answer to local state only (NO API call here) ────────
+    // Save current answer into state
     const updatedAnswers = {
       ...answers,
-      [question.id]: isTyped ? { typedAnswer } : { choiceId: selectedChoiceId },
+      [currentQuestion.id]: isTyped ? { typedAnswer } : { choiceId: selectedChoiceId },
     };
     setAnswers(updatedAnswers);
 
-    // ── Step 2: Navigate to next question (pure local, instant) ───────────
-    if (currentIdx < quiz.questions!.length - 1) {
-      setDirection('next');
-      setIsTransitioning(true);
-      setTimeout(() => {
-        const nextIdx = currentIdx + 1;
-        const nextQuestion = quiz.questions![nextIdx];
-        const previous = updatedAnswers[nextQuestion.id];
-        setCurrentIdx(nextIdx);
-        setSelectedChoiceId((previous as any)?.choiceId ?? null);
-        setTypedAnswer((previous as any)?.typedAnswer ?? '');
-        setIsTransitioning(false);
-      }, 150);
-      return; // ← do NOT hit backend yet
+    // Navigate forward
+    setDirection('next');
+    setIsTransitioning(true);
+    setTimeout(() => {
+      const nextIdx = currentIdx + 1;
+      const nextQuestion = quiz.questions![nextIdx];
+      const previous = updatedAnswers[nextQuestion.id];
+      setCurrentIdx(nextIdx);
+      setSelectedChoiceId((previous as any)?.choiceId ?? null);
+      setTypedAnswer((previous as any)?.typedAnswer ?? '');
+      setIsTransitioning(false);
+    }, 150);
+  };
+
+  // ── Finish Quiz: single-shot submit of ALL answers ─────────────────────
+  const handleFinish = async () => {
+    if (!quiz) return;
+
+    const resolvedAttemptId = attemptId ?? (Number(localStorage.getItem(ATTEMPT_KEY)) || null);
+    if (!resolvedAttemptId) {
+      toast.error('Session lost. Please refresh and start the quiz again.');
+      return;
     }
 
-    // ── Step 3: Last question — submit ALL answers then complete ──────────
+    const currentQuestion = quiz.questions![currentIdx];
+    const isTyped = currentQuestion?.type === 'typed';
+
+    // Merge the current (last) question's answer
+    const finalAnswers = {
+      ...answers,
+      [currentQuestion.id]: isTyped ? { typedAnswer } : { choiceId: selectedChoiceId },
+    };
+
+    // Build the payload expected by /submit/
+    const formatted = Object.entries(finalAnswers).map(([qId, ans]) => {
+      const q = quiz.questions!.find(q => q.id === Number(qId));
+      return {
+        question: Number(qId),
+        choice: q?.type === 'mcq' ? ((ans as any).choiceId ?? null) : null,
+        typed_answer: q?.type === 'typed' ? ((ans as any).typedAnswer ?? null) : null,
+      };
+    });
+
     setIsSubmitting(true);
     try {
-      // Submit every collected answer to the backend
-      for (const [qId, ans] of Object.entries(updatedAnswers)) {
-        const q = quiz.questions!.find(q => q.id === Number(qId));
-        if (!q) continue;
-        try {
-          await api.post(`/api/quizzes/attempts/${resolvedAttemptId}/answer/`, {
-            question_id: Number(qId),
-            choice_id: q.type === 'mcq' ? (ans as any).choiceId ?? null : null,
-            typed_answer: q.type === 'typed' ? (ans as any).typedAnswer ?? null : null,
-          });
-        } catch (ansErr: any) {
-          // 400 = already answered (idempotent) — safe to ignore
-          if (ansErr?.response?.status !== 400) throw ansErr;
-        }
-      }
-
-      // Mark the attempt as complete
-      try {
-        await api.post(`/api/quizzes/attempts/${resolvedAttemptId}/complete/`);
-      } catch (completeErr: any) {
-        if (completeErr?.response?.status !== 400) throw completeErr;
-      }
-
-      setIsFinalSubmitted(true);
+      await api.post(`/api/quizzes/attempts/${resolvedAttemptId}/submit/`, {
+        answers: formatted,
+      });
       localStorage.removeItem(ATTEMPT_KEY);
       router.push(`/dashboard/quiz/${id}/results/${resolvedAttemptId}`);
     } catch (e: any) {
@@ -159,17 +150,22 @@ export default function TakeQuizPage() {
   const currentQuestion = quiz?.questions?.[currentIdx];
   const isTyped = currentQuestion?.type === 'typed';
   const canContinue = isTyped ? typedAnswer.trim().length > 0 : !!selectedChoiceId;
+  const isLast = quiz ? currentIdx === quiz.questions!.length - 1 : false;
 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isSubmitting || isTransitioning || isQuitModalOpen) return;
-      
+
       const mq = quiz?.questions![currentIdx];
       if (!mq) return;
 
       if (e.key === 'Enter' && canContinue) {
-        handleNext();
+        if (isLast) {
+          handleFinish();
+        } else {
+          handleNext();
+        }
       } else if (mq.type === 'mcq' && ['1', '2', '3', '4'].includes(e.key)) {
         const idx = parseInt(e.key) - 1;
         if (mq.choices[idx]) {
@@ -179,7 +175,7 @@ export default function TakeQuizPage() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [quiz, currentIdx, isSubmitting, isTransitioning, canContinue, isQuitModalOpen, typedAnswer, selectedChoiceId]);
+  }, [quiz, currentIdx, isSubmitting, isTransitioning, canContinue, isQuitModalOpen, typedAnswer, selectedChoiceId, isLast]);
 
   if (isLoading) return (
     <div style={{ padding: '80px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
@@ -207,7 +203,6 @@ export default function TakeQuizPage() {
 
   const total = quiz.questions.length;
   const progress = ((currentIdx + 1) / total) * 100;
-  const isLast = currentIdx === total - 1;
 
   return (
     <div style={{ maxWidth: '760px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '28px', paddingBottom: '60px' }}>
@@ -344,9 +339,9 @@ export default function TakeQuizPage() {
         <Button
           variant="outline"
           size="lg"
-          disabled={currentIdx === 0 || isSubmitting || isFinalSubmitted}
+          disabled={currentIdx === 0 || isSubmitting}
           onClick={() => {
-            if (!quiz || isFinalSubmitted) return;
+            if (!quiz) return;
             const prevIdx = Math.max(0, currentIdx - 1);
             setDirection('prev');
             setIsTransitioning(true);
@@ -364,17 +359,30 @@ export default function TakeQuizPage() {
           Previous
         </Button>
 
-        <Button
-          variant="primary"
-          size="lg"
-          disabled={!canContinue || isSubmitting || isFinalSubmitted}
-          onClick={handleNext}
-          isLoading={isSubmitting}
-          style={{ gap: '8px', boxShadow: '0 4px 14px var(--accent-subtle)', minWidth: '180px' }}
-        >
-          {isLast ? 'Finish Quiz' : 'Next Question'}
-          <ChevronRight size={16} />
-        </Button>
+        {isLast ? (
+          <Button
+            variant="primary"
+            size="lg"
+            disabled={!canContinue || isSubmitting}
+            onClick={handleFinish}
+            isLoading={isSubmitting}
+            style={{ gap: '8px', boxShadow: '0 4px 14px var(--accent-subtle)', minWidth: '180px' }}
+          >
+            Finish Quiz
+            <ChevronRight size={16} />
+          </Button>
+        ) : (
+          <Button
+            variant="primary"
+            size="lg"
+            disabled={!canContinue || isSubmitting}
+            onClick={handleNext}
+            style={{ gap: '8px', boxShadow: '0 4px 14px var(--accent-subtle)', minWidth: '180px' }}
+          >
+            Next Question
+            <ChevronRight size={16} />
+          </Button>
+        )}
       </div>
 
       {/* Quit Modal */}
