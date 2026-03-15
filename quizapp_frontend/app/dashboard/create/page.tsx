@@ -69,13 +69,16 @@ export default function CreateQuizPage() {
 
   const handleGenerate = async (config: QuizConfig) => {
     try {
-      await createQuiz({ 
+      const res = await createQuiz({ 
         topic: config.topic, 
         difficulty: config.difficulty, 
         num_questions: config.num_questions,
         quiz_config: config 
       }, 45000); 
-      toast.success('Quiz generated!');
+      toast.success('Quiz generated! Starting now...');
+      if (res?.id) {
+        router.push(`/dashboard/quiz/${res.id}/take`);
+      }
     } catch (e: any) {
       handleError(e);
     }

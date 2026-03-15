@@ -24,7 +24,15 @@ export default function WaitingRoomPage() {
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'room_update') {
-        setRoomData(data.data);
+        const room = data.data;
+        setRoomData(room);
+        
+        // Auto-ready host if not ready
+        const me = room.participants.find((p: any) => p.username === user?.username);
+        const hostId = room.host_id;
+        if (me && me.id === hostId && !me.is_ready && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ action: 'ready', is_ready: true }));
+        }
       } else if (data.type === 'quiz_started') {
         router.push(`/room/${code}/play`);
       }
