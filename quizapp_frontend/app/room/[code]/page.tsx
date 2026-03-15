@@ -37,7 +37,7 @@ export default function WaitingRoomPage() {
 
     setSocket(ws);
     return () => ws.close();
-  }, [code, token]);
+  }, [code, accessToken]);
 
   const toggleReady = () => {
     if (!socket || !roomData) return;
