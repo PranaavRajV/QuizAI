@@ -18,6 +18,7 @@ export default function TakeQuizPage() {
   const [selectedChoiceId, setSelectedChoiceId] = useState<number | null>(null);
   const [typedAnswer, setTypedAnswer] = useState('');
   const [attemptId, setAttemptId] = useState<number | null>(null);
+  const [isAttemptStarting, setIsAttemptStarting] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isQuitModalOpen, setIsQuitModalOpen] = useState(false);
@@ -36,6 +37,7 @@ export default function TakeQuizPage() {
       const savedId = localStorage.getItem(ATTEMPT_KEY);
       if (savedId) {
         setAttemptId(Number(savedId));
+        setIsAttemptStarting(false);
         return;
       }
 
@@ -44,6 +46,7 @@ export default function TakeQuizPage() {
         const newAttemptId = resp.data.attempt_id;
         if (!newAttemptId) {
           toast.error('Could not start quiz — please try again.');
+          setIsAttemptStarting(false);
           return;
         }
         // Persist immediately so any re-render / refresh keeps it
@@ -55,10 +58,13 @@ export default function TakeQuizPage() {
           // Already completed — redirect straight to results
           localStorage.removeItem(ATTEMPT_KEY);
           router.replace(`/dashboard/quiz/${id}/results/${existingAttemptId}`);
+          return; // don't flip isAttemptStarting — we're navigating away
         } else {
           console.error('Failed to start attempt', e?.response?.data);
           toast.error('Could not start quiz — please refresh and try again.');
         }
+      } finally {
+        setIsAttemptStarting(false);
       }
     };
     if (id) startAttempt();
@@ -189,6 +195,14 @@ export default function TakeQuizPage() {
   if (!quiz.questions || quiz.questions.length === 0 || !currentQuestion) return (
     <div style={{ padding: '80px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
       No questions in this quiz.
+    </div>
+  );
+  // Block the quiz UI until we have a confirmed attempt ID.
+  // This eliminates the async race where the user could answer Q1
+  // before the POST /start/ had resolved, sending attemptId=null.
+  if (isAttemptStarting) return (
+    <div style={{ padding: '80px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
+      Preparing your quiz…
     </div>
   );
 
