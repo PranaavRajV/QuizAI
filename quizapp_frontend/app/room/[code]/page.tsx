@@ -17,7 +17,7 @@ export default function WaitingRoomPage() {
   useEffect(() => {
     if (!accessToken || !code) return;
 
-    const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000'}/ws/room/${code}/?token=${accessToken}`;
+    const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL || 'wss://quizai-production.up.railway.app'}/ws/room/${code}/?token=${accessToken}`;
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => console.log("Connected to room");

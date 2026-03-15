@@ -75,9 +75,10 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, accessToken: null });
         Cookies.remove('accessToken');
         Cookies.remove('refreshToken');
-        localStorage.removeItem('quiz_tokens');
-        // Clear theme or other local storage if needed
-        window.location.href = '/login';
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('quiz_tokens');
+          window.location.href = '/login';
+        }
       },
 
       refreshToken: async () => {

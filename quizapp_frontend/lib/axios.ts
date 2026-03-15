@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://quizai-production.up.railway.app';
 
 const api: AxiosInstance = axios.create({
   baseURL: API_URL,
@@ -54,8 +54,8 @@ api.interceptors.response.use(
         // Clear everything on failure
         Cookies.remove('accessToken');
         Cookies.remove('refreshToken');
-        localStorage.removeItem('quiz_tokens');
         if (typeof window !== 'undefined') {
+          localStorage.removeItem('quiz_tokens');
           window.location.href = '/login';
         }
         return Promise.reject(refreshError);

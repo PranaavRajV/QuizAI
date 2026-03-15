@@ -16,7 +16,7 @@ export default function PublicSharePage() {
   useEffect(() => {
     const fetchShare = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://quizai-production.up.railway.app';
         const resp = await axios.get(`${apiUrl}/api/social/share/public-share/${token}/`);
         setData(resp.data);
       } catch (e) {
