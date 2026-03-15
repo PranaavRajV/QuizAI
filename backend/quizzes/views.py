@@ -32,7 +32,25 @@ class QuizViewSet(viewsets.ModelViewSet):
     search_fields = ['topic']
     
     def get_queryset(self):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            # For unauthenticated users, only show public quizzes
+            return Quiz.objects.filter(is_public=True, is_active=True).select_related('created_by').prefetch_related('questions', 'questions__choices')
+            
+        # For authenticated users:
+        # 1. In list view (My Quizzes), only show owned quizzes
+        # 2. In detail view, allow owned OR public quizzes
+        if self.action == 'list':
+            return Quiz.objects.filter(
+                created_by=user,
+                is_active=True
+            ).select_related('created_by').prefetch_related(
+                'questions', 'questions__choices'
+            )
+            
+        from django.db.models import Q
         return Quiz.objects.filter(
+            Q(created_by=user) | Q(is_public=True),
             is_active=True
         ).select_related('created_by').prefetch_related(
             'questions', 'questions__choices'
@@ -171,11 +189,17 @@ class AttemptViewSet(viewsets.GenericViewSet):
         choice_id = request.data.get('choice_id')
         typed_answer = request.data.get('typed_answer')
 
-        question = get_object_or_404(Question, id=question_id, quiz=attempt.quiz)
+        try:
+            question = Question.objects.get(id=question_id, quiz=attempt.quiz)
+        except Question.DoesNotExist:
+            return Response({"error": f"Question {question_id} not found in this quiz"}, status=status.HTTP_404_NOT_FOUND)
 
         defaults = {}
         if question.type == 'mcq':
-            selected_choice = get_object_or_404(Choice, id=choice_id, question=question)
+            try:
+                selected_choice = Choice.objects.get(id=choice_id, question=question)
+            except Choice.DoesNotExist:
+                return Response({"error": f"Choice {choice_id} not found for this question"}, status=status.HTTP_404_NOT_FOUND)
             defaults['selected_choice'] = selected_choice
             defaults['is_correct'] = selected_choice.is_correct
             defaults['typed_answer'] = None
