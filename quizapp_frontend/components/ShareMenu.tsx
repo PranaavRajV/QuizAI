@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Share2, Link as LinkIcon, Send, Swords, Download, Twitter, Check } from 'lucide-react';
 import { Button } from './ui-components';
-import { toast } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import html2canvas from 'html2canvas';
 
 interface ShareMenuProps {

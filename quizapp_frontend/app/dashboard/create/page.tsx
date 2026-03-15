@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui-components';
 import { useCreateQuiz } from '@/hooks/api-hooks';
 import { useRouter } from 'next/navigation';
-import { toast } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import {
   Sparkles, Brain, Zap, Target, ArrowRight,
   RotateCcw, BookOpen, ChevronRight, AlertCircle, Play,

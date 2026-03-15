@@ -7,7 +7,7 @@ import { Button } from '@/components/ui-components';
 import { Skeleton } from '@/components/quiz-components';
 import { ChevronLeft, ChevronRight, Play, Plus, Share2, Layers, Swords } from 'lucide-react';
 import Link from 'next/link';
-import { toast } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Trash2 } from 'lucide-react';
 import api from '@/lib/axios';
@@ -185,7 +185,7 @@ export default function QuizzesPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.results.map((quiz: any) => (
+                {(data?.results || []).map((quiz: any) => (
                   <QuizRow 
                     key={quiz.id} 
                     quiz={quiz} 

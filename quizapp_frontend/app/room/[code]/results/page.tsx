@@ -30,7 +30,8 @@ export default function MultiplayerResultsPage() {
   if (isLoading) return <div style={{ textAlign: 'center', padding: '100px' }}>Loading Results...</div>;
   if (!room) return <div style={{ textAlign: 'center', padding: '100px' }}>Room not found.</div>;
 
-  const sortedParticipants = [...room.participants].sort((a, b) => b.score - a.score);
+  const participants = room.participants || [];
+  const sortedParticipants = [...participants].sort((a, b) => (b.score || 0) - (a.score || 0));
   const winner = sortedParticipants[0];
 
   return (

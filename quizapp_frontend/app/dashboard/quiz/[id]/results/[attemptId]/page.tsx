@@ -15,7 +15,7 @@ import { useFriends } from '@/hooks/social/useFriends';
 import ShareMenu from '@/components/ShareMenu';
 import ShareModal from '@/components/ShareModal';
 import api from '@/lib/axios';
-import { toast } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 export default function ResultsPage() {
   const router = useRouter();

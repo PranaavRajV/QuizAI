@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui-components';
 import { Timer, Brain, Users, ChevronRight, Trophy } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import toast from 'react-hot-toast';
 import api from '@/lib/axios';
 import { Quiz, Question, Room } from '@/types/api';
 
@@ -47,8 +48,9 @@ export default function MultiplayerPlayPage() {
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'room_update') {
-        setResults(data.data.participants.sort((a: any, b: any) => b.score - a.score));
-        if (data.data.status === 'completed') {
+        const participants = data.data?.participants || [];
+        setResults([...participants].sort((a: any, b: any) => (b.score || 0) - (a.score || 0)));
+        if (data.data?.status === 'completed') {
             router.push(`/room/${code}/results`);
         }
       }
