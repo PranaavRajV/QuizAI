@@ -7,6 +7,7 @@ import { Button } from '@/components/ui-components';
 import { Modal } from '@/components/quiz-components';
 import api from '@/lib/axios';
 import { Timer, LogOut, ChevronRight } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function TakeQuizPage() {
   const router = useRouter();
@@ -117,7 +118,7 @@ export default function TakeQuizPage() {
       const httpStatus = e?.response?.status;
       const detail = e?.response?.data?.error || e?.response?.data?.detail || e?.message || 'Unknown error';
       console.error('[Quiz] Submit failed:', { httpStatus, detail, data: e?.response?.data });
-      alert(`Submit failed (${httpStatus || 'network error'}): ${detail}`);
+      toast.error(`Submit failed: ${detail}`);
     } finally {
       setIsSubmitting(false);
     }

@@ -26,7 +26,7 @@ const DIFFICULTIES = [
   { id: 'hard',   Icon: Brain,  label: 'Hard',   desc: 'Critical analysis', accent: 'var(--danger)',        accentBg: 'var(--danger-subtle)',   accentBorder: 'var(--danger-border)' },
 ] as const;
 
-import { QuizCustomizationModal } from '@/components/quiz-customization-modal';
+
 import { QuizConfig } from '@/types/api';
 
 export default function CreateQuizPage() {
@@ -37,7 +37,6 @@ export default function CreateQuizPage() {
   const [difficulty, setDifficulty]     = useState<'easy' | 'medium' | 'hard'>('medium');
   const [numQuestions, setNumQuestions] = useState(10);
   const [msgIdx, setMsgIdx]             = useState(0);
-  const [isModalOpen, setIsModalOpen]   = useState(false);
   const [lastConfig, setLastConfig]     = useState<QuizConfig | null>(null);
 
   useEffect(() => {
@@ -46,25 +45,10 @@ export default function CreateQuizPage() {
     return () => clearInterval(id);
   }, [isLoading]);
 
-  const handleGenerateFromModal = async (config: QuizConfig) => {
-    setIsModalOpen(false);
-    setLastConfig(config);
-    try {
-      await createQuiz({ 
-        topic: config.topic, 
-        difficulty: config.difficulty, 
-        num_questions: config.num_questions,
-        quiz_config: config 
-      }, 30000); // 30s timeout specifically for generation
-      toast.success('Quiz generated!');
-    } catch (e: any) {
-      handleError(e);
-    }
-  };
-
   const retryLastConfig = () => {
     if (lastConfig) {
-      handleGenerateFromModal(lastConfig);
+      // Re-trigger the logic directly
+      handleGenerate(lastConfig);
     }
   };
 
@@ -83,9 +67,18 @@ export default function CreateQuizPage() {
     toast.error(msg, { duration: 6000 });
   };
 
-  const handleOpenModal = () => {
-    if (!topic.trim()) { toast.error('Please enter a topic first.'); return; }
-    setIsModalOpen(true);
+  const handleGenerate = async (config: QuizConfig) => {
+    try {
+      await createQuiz({ 
+        topic: config.topic, 
+        difficulty: config.difficulty, 
+        num_questions: config.num_questions,
+        quiz_config: config 
+      }, 45000); 
+      toast.success('Quiz generated!');
+    } catch (e: any) {
+      handleError(e);
+    }
   };
 
   /* ─── Loading state ──────────────────────────────────────── */
@@ -433,7 +426,19 @@ export default function CreateQuizPage() {
         <Button
           variant="primary" size="lg"
           disabled={!topic.trim() || isLoading}
-          onClick={handleOpenModal}
+          onClick={() => {
+            if (!topic.trim()) { toast.error('Please enter a topic first.'); return; }
+            const config: QuizConfig = {
+              topic,
+              difficulty,
+              num_questions: numQuestions,
+              question_types: ['mcq'],
+              time_per_question: 30,
+              points_per_question: 10
+            };
+            setLastConfig(config);
+            handleGenerate(config);
+          }}
           style={{ width: '100%', gap: '8px', justifyContent: 'center', boxShadow: topic.trim() ? '0 4px 14px var(--accent-subtle)' : 'none' }}
         >
           <Sparkles size={17} />
@@ -517,12 +522,6 @@ export default function CreateQuizPage() {
         </section>
       </div>
 
-      <QuizCustomizationModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onGenerate={handleGenerateFromModal}
-        isGenerating={isLoading}
-      />
     </div>
   );
 }

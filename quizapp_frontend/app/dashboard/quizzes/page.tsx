@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Trash2 } from 'lucide-react';
 import api from '@/lib/axios';
+import { ChallengeSettingsModal } from '@/components/ChallengeSettingsModal';
 
 /* ─── Difficulty chip ─── */
 function DiffChip({ level }: { level: 'easy' | 'medium' | 'hard' }) {
@@ -97,6 +98,8 @@ export default function QuizzesPage() {
   const { data, isLoading, deleteQuiz } = useQuizzes(page);
   const [quizToDelete, setQuizToDelete] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [challengeQuiz, setChallengeQuiz] = useState<any>(null);
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
 
   const copyShareLink = async (quiz: any) => {
     try {
@@ -191,20 +194,35 @@ export default function QuizzesPage() {
                     quiz={quiz} 
                     onShare={() => copyShareLink(quiz)} 
                     onDelete={() => setQuizToDelete(quiz)}
-                    onChallenge={async () => {
-                      try {
-                        const resp = await api.post('/api/quizzes/rooms/', { quiz_id: quiz.id });
-                        router.push(`/room/${resp.data.room_code}`);
-                      } catch (e) {
-                        toast.error('Failed to create room');
-                      }
-                    }}
+                    onChallenge={() => setChallengeQuiz(quiz)}
                   />
                 ))}
               </tbody>
             </table>
           </div>
         )}
+
+        <ChallengeSettingsModal
+          isOpen={!!challengeQuiz}
+          onClose={() => setChallengeQuiz(null)}
+          quizTopic={challengeQuiz?.topic || ''}
+          isLoading={isCreatingRoom}
+          onConfirm={async (settings) => {
+            if (!challengeQuiz) return;
+            setIsCreatingRoom(true);
+            try {
+              const resp = await api.post('/api/quizzes/rooms/', { 
+                quiz_id: challengeQuiz.id,
+                ...settings 
+              });
+              router.push(`/room/${resp.data.room_code}`);
+            } catch (e) {
+              toast.error('Failed to create room');
+            } finally {
+              setIsCreatingRoom(false);
+            }
+          }}
+        />
 
         <ConfirmDialog
           isOpen={!!quizToDelete}
